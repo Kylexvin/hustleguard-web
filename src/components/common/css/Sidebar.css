@@ -1,0 +1,70 @@
+.sidebar .MuiDrawer-paper {
+  background-color: #1B4D3D !important;
+  color: #fff !important;
+  border-right: none !important;
+}
+
+.sidebar .MuiListItem-root {
+  border-radius: 8px;
+  margin: 0 8px 4px 8px;
+  padding: 8px 12px;
+}
+
+.sidebar .MuiListItem-root:hover {
+  background-color: rgba(255,255,255,0.1) !important;
+}
+
+.sidebar .MuiListItemIcon-root {
+  color: rgba(255,255,255,0.7);
+  min-width: 40px;
+}
+
+.sidebar .MuiListItemText-primary {
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+}
+
+.sidebar .Mui-selected {
+  background-color: rgba(255,255,255,0.15) !important;
+}
+
+.sidebar .Mui-selected .MuiListItemIcon-root {
+  color: #fff !important;
+}
+
+.sidebar .Mui-selected .MuiListItemText-primary {
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+
+/* Collapse sub-items */
+.sidebar .MuiCollapse-root .MuiListItem-root {
+  padding-left: 32px !important;
+}
+
+.sidebar .MuiCollapse-root .MuiListItemIcon-root {
+  min-width: 32px !important;
+}
+
+.sidebar .MuiCollapse-root .MuiListItemText-primary {
+  font-size: 13px !important;
+  color: rgba(255,255,255,0.6) !important;
+}
+
+.sidebar .MuiCollapse-root .Mui-selected .MuiListItemText-primary {
+  color: #fff !important;
+}
+
+/* Scrollbar */
+.sidebar .MuiDrawer-paper::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar .MuiDrawer-paper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar .MuiDrawer-paper::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+}

@@ -1,0 +1,136 @@
+.mobile-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #F5F7F6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Top Bar */
+.top-bar {
+  background: #1B4D3D;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.top-bar-sub {
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.top-bar-shop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #FFF;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.top-bar-icon {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+}
+
+.top-bar-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #2D6B55;
+  color: #FFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background: #FFF;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  min-width: 150px;
+  padding: 6px 0;
+  z-index: 200;
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #1B4D3D;
+  cursor: pointer;
+}
+
+.dropdown-item:hover {
+  background: #F5F7F6;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #E0E0E0;
+  margin: 4px 0;
+}
+
+.dropdown-item.logout {
+  color: #C0392B;
+}
+
+.dropdown-item.logout svg {
+  margin-right: 8px;
+}
+
+/* Content */
+.mobile-content {
+  flex: 1;
+  padding-bottom: 60px;
+}
+
+/* Bottom Nav */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #FFF;
+  display: flex;
+  justify-content: space-around;
+  padding: 6px 0 10px;
+  box-shadow: 0 -1px 8px rgba(0,0,0,0.06);
+  z-index: 100;
+  border-top: 1px solid #f0f0f0;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  color: #999;
+  cursor: pointer;
+  padding: 4px 12px;
+  transition: color 0.2s;
+}
+
+.nav-item svg {
+  font-size: 20px;
+}
+
+.nav-item.active {
+  color: #2D6B55;
+}
+
+.nav-item:hover {
+  color: #2D6B55;
+}

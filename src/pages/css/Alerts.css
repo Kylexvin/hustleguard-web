@@ -1,0 +1,276 @@
+.alerts-container {
+  background: #F5F7F6;
+  min-height: 100vh;
+  padding-bottom: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Header */
+.alerts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #FFF;
+  border-bottom: 1px solid #E8ECF0;
+}
+
+.alerts-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.alerts-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin: 0;
+}
+
+.alerts-badge {
+  background: #C0392B;
+  color: #FFF;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+.alerts-mark-all {
+  background: none;
+  border: none;
+  color: #2D6B55;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.alerts-mark-all:hover {
+  color: #1B4D3D;
+}
+
+/* Filters */
+.alerts-filters {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #FFF;
+  border-bottom: 1px solid #E8ECF0;
+}
+
+.filter-btn {
+  padding: 6px 16px;
+  border: 1.5px solid #E8ECF0;
+  border-radius: 20px;
+  background: #FFF;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1A1A2E;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover {
+  border-color: #2D6B55;
+}
+
+.filter-btn.active {
+  background: #1B4D3D;
+  color: #FFF;
+  border-color: #1B4D3D;
+}
+
+/* Alert List */
+.alerts-list {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alert-item {
+  background: #FFF;
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1px solid #E8ECF0;
+  display: flex;
+  gap: 12px;
+  transition: border-color 0.2s;
+}
+
+.alert-item.unread {
+  border-left: 4px solid #1B4D3D;
+}
+
+.alert-item.resolved {
+  opacity: 0.7;
+}
+
+.alert-item:hover {
+  border-color: #B0BEC5;
+}
+
+/* Alert Icon */
+.alert-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* Alert Content */
+.alert-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.alert-type {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alert-type-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7F8C8D;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.alert-dot {
+  color: #1B4D3D;
+  font-size: 8px;
+}
+
+.alert-resolved-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #2E7D32;
+  background: #E8F5E9;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+.alert-time {
+  font-size: 11px;
+  color: #95A5A6;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.alert-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin: 0 0 2px 0;
+}
+
+.alert-message {
+  font-size: 13px;
+  color: #4A4A5A;
+  margin: 0 0 6px 0;
+}
+
+.alert-product {
+  font-size: 12px;
+  color: #7F8C8D;
+  display: inline-block;
+}
+
+/* Alert Actions */
+.alert-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.alert-read-btn,
+.alert-resolve-btn,
+.alert-delete-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.alert-read-btn {
+  background: #E8F5E9;
+  color: #2E7D32;
+}
+
+.alert-read-btn:hover {
+  background: #C8E6C9;
+}
+
+.alert-resolve-btn {
+  background: #E3F2FD;
+  color: #1565C0;
+}
+
+.alert-resolve-btn:hover {
+  background: #BBDEFB;
+}
+
+.alert-delete-btn {
+  background: #FDECEA;
+  color: #C0392B;
+}
+
+.alert-delete-btn:hover {
+  background: #F5C6CB;
+}
+
+/* Empty State */
+.alerts-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #95A5A6;
+}
+
+.alerts-empty svg {
+  font-size: 48px;
+  color: #D0D5DD;
+  margin-bottom: 12px;
+}
+
+.alerts-empty p {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin: 0 0 4px 0;
+}
+
+.alerts-empty span {
+  font-size: 14px;
+}
+
+/* Desktop */
+@media (min-width: 768px) {
+  .alerts-list {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+}
