@@ -12,6 +12,7 @@ import {
   faArrowLeft
 } from '@fortawesome/free-solid-svg-icons';
 import api from '../../api/client';
+import { useAuth } from '../../hooks/useAuth'; // ADD THIS
 import './css/Auth.css';
 
 export default function Register() {
@@ -26,6 +27,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth(); // ADD THIS
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,8 +35,17 @@ export default function Register() {
     setLoading(true);
 
     try {
+      // Register the user
       await api.post('/auth/register', formData);
-      navigate('/login');
+      
+      // Auto-login after registration
+      const result = await login(formData.email, formData.password);
+      
+      if (result.success) {
+        navigate('/'); // Go to dashboard
+      } else {
+        navigate('/login'); // Fallback to login if auto-login fails
+      }
     } catch (error) {
       setError(error.response?.data?.message || 'Registration failed');
     } finally {

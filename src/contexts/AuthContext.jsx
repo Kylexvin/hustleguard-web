@@ -43,6 +43,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Add this method to manually set user (for registration)
+  const setUserData = (userData) => {
+    setUser(userData);
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -50,7 +55,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, setUserData, loading }}>
       {children}
     </AuthContext.Provider>
   );
