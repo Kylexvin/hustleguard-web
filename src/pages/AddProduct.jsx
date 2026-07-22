@@ -1,47 +1,104 @@
-// src/pages/AddProduct.jsx
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// src/pages/AddProduct.jsx - Simplified version
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faArrowLeft, 
   faSave, 
-  faImage,
   faTag,
   faMoneyBill,
   faBox,
   faStore,
-  faExclamationTriangle
+  faExclamationTriangle,
+  faSpinner,
+  faBarcode,
+  faRuler
 } from '@fortawesome/free-solid-svg-icons';
 import './css/AddProduct.css';
 
 export default function AddProduct() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditing = !!id;
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(isEditing);
+  const [error, setError] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     category: '',
     buyingPrice: '',
     sellingPrice: '',
     quantity: '',
-    minStockAlert: '5',
+    minStockAlert: '3',
     supplier: '',
     supplierPrice: '',
-    description: ''
+    description: '',
+    barcode: '',
+    unit: 'pcs'
   });
 
-  const categories = [
-    'Electronics',
-    'Clothing',
-    'Food',
-    'Beverages',
-    'Health',
-    'Beauty',
-    'Home',
-    'Sports',
-    'Toys',
-    'Books',
-    'Other'
-  ];
+  const units = ['pcs', 'kg', 'g', 'ml', 'L', 'pack', 'box', 'dozen', 'pair', 'set', 'roll', 'meter', 'cm', 'inch', 'other'];
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get('/products');
+      const products = response.data.data || [];
+      const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
+      
+      if (uniqueCategories.length === 0) {
+        setCategories([
+          'Electronics', 'Clothing', 'Food', 'Beverages', 
+          'Health', 'Beauty', 'Home', 'Sports', 'Toys', 'Books', 'Other'
+        ]);
+      } else {
+        setCategories(uniqueCategories);
+      }
+    } catch (err) {
+      setCategories([
+        'Electronics', 'Clothing', 'Food', 'Beverages', 
+        'Health', 'Beauty', 'Home', 'Sports', 'Toys', 'Books', 'Other'
+      ]);
+    }
+  };
+
+  const fetchProduct = useCallback(async () => {
+    try {
+      setFetching(true);
+      setError(null);
+      const response = await axios.get(`/products/${id}`);
+      const product = response.data.data;
+      setFormData({
+        name: product.name || '',
+        category: product.category || '',
+        buyingPrice: product.buyingPrice || '',
+        sellingPrice: product.sellingPrice || '',
+        quantity: product.quantity || '',
+        minStockAlert: product.minStockAlert || '3',
+        supplier: product.supplier || '',
+        supplierPrice: product.supplierPrice || '',
+        description: product.description || '',
+        barcode: product.barcode || '',
+        unit: product.unit || 'pcs'
+      });
+    } catch (err) {
+      console.error('Error fetching product:', err);
+      setError('Failed to load product data. Please try again.');
+    } finally {
+      setFetching(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (isEditing) {
+      fetchProduct();
+    }
+  }, [isEditing, fetchProduct]);
 
   const handleChange = (e) => {
     setFormData({
@@ -53,35 +110,65 @@ export default function AddProduct() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // API call will go here
-    console.log('Product data:', formData);
-    setTimeout(() => {
-      setLoading(false);
+    setError(null);
+
+    try {
+      const productData = {
+        name: formData.name,
+        category: formData.category,
+        buyingPrice: parseFloat(formData.buyingPrice),
+        sellingPrice: parseFloat(formData.sellingPrice),
+        quantity: parseInt(formData.quantity),
+        minStockAlert: parseInt(formData.minStockAlert),
+        ...(formData.supplier && { supplier: formData.supplier }),
+        ...(formData.supplierPrice && { supplierPrice: parseFloat(formData.supplierPrice) }),
+        ...(formData.description && { description: formData.description }),
+        ...(formData.barcode && { barcode: formData.barcode }),
+        unit: formData.unit || 'pcs'
+      };
+
+      if (isEditing) {
+        await axios.put(`/products/${id}`, productData);
+      } else {
+        await axios.post('/products', productData);
+      }
+
       navigate('/products');
-    }, 1000);
+    } catch (err) {
+      console.error('Error saving product:', err);
+      setError(err.response?.data?.message || 'Failed to save product. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (fetching) {
+    return (
+      <div className="add-product-loading">
+        <FontAwesomeIcon icon={faSpinner} spin />
+        <p>Loading product data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="add-product-container">
-      {/* Header */}
       <div className="add-product-header">
         <button className="add-product-back" onClick={() => navigate('/products')}>
           <FontAwesomeIcon icon={faArrowLeft} />
         </button>
-        <h2>Add Product</h2>
+        <h2>{isEditing ? 'Edit Product' : 'Add Product'}</h2>
         <div className="add-product-header-spacer"></div>
       </div>
 
-      <form onSubmit={handleSubmit} className="add-product-form">
-        {/* Image Upload */}
-        <div className="add-product-image-section">
-          <div className="add-product-image-placeholder">
-            <FontAwesomeIcon icon={faImage} />
-            <span>Add Product Image</span>
-          </div>
+      {error && (
+        <div className="add-product-error">
+          <p>{error}</p>
+          <button onClick={() => setError(null)}>Dismiss</button>
         </div>
+      )}
 
-        {/* Basic Info */}
+      <form onSubmit={handleSubmit} className="add-product-form">
         <div className="add-product-section">
           <h3>Basic Information</h3>
           
@@ -118,6 +205,38 @@ export default function AddProduct() {
             </div>
           </div>
 
+          <div className="add-product-row">
+            <div className="add-product-field half">
+              <label>Barcode (optional)</label>
+              <div className="add-product-input-wrapper">
+                <FontAwesomeIcon icon={faBarcode} className="add-product-input-icon" />
+                <input
+                  type="text"
+                  name="barcode"
+                  placeholder="Enter barcode"
+                  value={formData.barcode}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div className="add-product-field half">
+              <label>Unit</label>
+              <div className="add-product-input-wrapper">
+                <FontAwesomeIcon icon={faRuler} className="add-product-input-icon" />
+                <select
+                  name="unit"
+                  value={formData.unit}
+                  onChange={handleChange}
+                >
+                  {units.map((unit) => (
+                    <option key={unit} value={unit}>{unit}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div className="add-product-field">
             <label>Description</label>
             <textarea
@@ -130,7 +249,6 @@ export default function AddProduct() {
           </div>
         </div>
 
-        {/* Pricing */}
         <div className="add-product-section">
           <h3>Pricing</h3>
           
@@ -203,7 +321,6 @@ export default function AddProduct() {
           </div>
         </div>
 
-        {/* Stock */}
         <div className="add-product-section">
           <h3>Stock</h3>
           
@@ -231,7 +348,7 @@ export default function AddProduct() {
                 <input
                   type="number"
                   name="minStockAlert"
-                  placeholder="5"
+                  placeholder="3"
                   value={formData.minStockAlert}
                   onChange={handleChange}
                   min="0"
@@ -241,7 +358,6 @@ export default function AddProduct() {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="add-product-actions">
           <button 
             type="button" 
@@ -255,8 +371,17 @@ export default function AddProduct() {
             className="add-product-submit"
             disabled={loading}
           >
-            <FontAwesomeIcon icon={faSave} />
-            {loading ? 'Saving...' : 'Save Product'}
+            {loading ? (
+              <>
+                <FontAwesomeIcon icon={faSpinner} spin />
+                {isEditing ? 'Updating...' : 'Saving...'}
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faSave} />
+                {isEditing ? 'Update Product' : 'Save Product'}
+              </>
+            )}
           </button>
         </div>
       </form>
