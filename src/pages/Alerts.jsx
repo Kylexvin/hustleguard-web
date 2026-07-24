@@ -1,5 +1,6 @@
 // src/pages/Alerts.jsx
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faBell, 
@@ -9,113 +10,184 @@ import {
   faClock,
   faCheck,
   faTrash,
-  faCircle
+  faCircle,
+  faSpinner,
+  faExclamationCircle,
+  faInfoCircle
 } from '@fortawesome/free-solid-svg-icons';
 import './css/Alerts.css';
 
 export default function Alerts() {
-  const [filter, setFilter] = useState('all'); // all, unread, resolved
+  const [filter, setFilter] = useState('all');
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [actionLoading, setActionLoading] = useState(null);
 
-  // Sample alerts - replace with API data
-  const [alerts, setAlerts] = useState([
-    {
-      id: 1,
-      type: 'low_stock',
-      severity: 'warning',
-      title: 'Low Stock Alert',
-      message: 'Laptop Pro has only 3 units remaining',
-      product: 'Laptop Pro',
-      time: '2 min ago',
-      isRead: false,
-      isResolved: false
-    },
-    {
-      id: 2,
-      type: 'out_of_stock',
-      severity: 'critical',
-      title: 'Out of Stock',
-      message: 'USB Cable is completely out of stock',
-      product: 'USB Cable',
-      time: '15 min ago',
-      isRead: false,
-      isResolved: false
-    },
-    {
-      id: 3,
-      type: 'dead_stock',
-      severity: 'warning',
-      title: 'Dead Stock Alert',
-      message: 'Office Chair has not been sold in 30 days',
-      product: 'Office Chair',
-      time: '1 hour ago',
-      isRead: true,
-      isResolved: false
-    },
-    {
-      id: 4,
-      type: 'price_change',
-      severity: 'info',
-      title: 'Supplier Price Change',
-      message: 'Supplier price for Coffee Beans increased by 15%',
-      product: 'Coffee Beans',
-      time: '2 hours ago',
-      isRead: true,
-      isResolved: true
-    },
-    {
-      id: 5,
-      type: 'low_stock',
-      severity: 'warning',
-      title: 'Low Stock Alert',
-      message: 'Notebook Set has only 2 units remaining',
-      product: 'Notebook Set',
-      time: '5 hours ago',
-      isRead: true,
-      isResolved: false
+  const fetchAlerts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axios.get('/alerts');
+      const alertsData = response.data.data || [];
+      setAlerts(alertsData);
+    } catch (err) {
+      console.error('Error fetching alerts:', err);
+      setError('Failed to load alerts. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  ]);
+  }, []);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const response = await axios.get('/alerts/unread/count');
+      setUnreadCount(response.data.data?.unreadCount || 0);
+    } catch (err) {
+      console.error('Error fetching unread count:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAlerts();
+    fetchUnreadCount();
+  }, [fetchAlerts, fetchUnreadCount]);
 
   const getSeverityIcon = (severity) => {
     switch (severity) {
-      case 'critical':
-        return faCircleXmark;
-      case 'warning':
-        return faTriangleExclamation;
-      case 'info':
-        return faCircleCheck;
-      default:
-        return faBell;
+      case 'critical': return faCircleXmark;
+      case 'warning': return faTriangleExclamation;
+      case 'info': return faCircleCheck;
+      default: return faBell;
     }
   };
 
   const getSeverityColor = (severity) => {
     switch (severity) {
-      case 'critical':
-        return '#C0392B';
-      case 'warning':
-        return '#E65100';
-      case 'info':
-        return '#2D6B55';
-      default:
-        return '#7F8C8D';
+      case 'critical': return '#EF4444';
+      case 'warning': return '#F59E0B';
+      case 'info': return '#10B981';
+      default: return '#6B7280';
     }
   };
 
   const getSeverityBg = (severity) => {
     switch (severity) {
-      case 'critical':
-        return '#FDECEA';
-      case 'warning':
-        return '#FFF3E0';
-      case 'info':
-        return '#E8F5E9';
-      default:
-        return '#F5F7F6';
+      case 'critical': return 'linear-gradient(135deg, #FEF2F2, #FEE2E2)';
+      case 'warning': return 'linear-gradient(135deg, #FFFBEB, #FEF3C7)';
+      case 'info': return 'linear-gradient(135deg, #ECFDF5, #D1FAE5)';
+      default: return 'linear-gradient(135deg, #F3F4F6, #E5E7EB)';
     }
   };
 
   const getTypeLabel = (type) => {
-    return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    const labels = {
+      low_stock: 'Low Stock',
+      out_of_stock: 'Out of Stock',
+      dead_stock: 'Dead Stock',
+      price_change: 'Price Change'
+    };
+    return labels[type] || type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'low_stock': return faExclamationCircle;
+      case 'out_of_stock': return faCircleXmark;
+      case 'dead_stock': return faTriangleExclamation;
+      default: return faInfoCircle;
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return date.toLocaleDateString('en-KE', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const markAsRead = async (id) => {
+    try {
+      setActionLoading(id);
+      await axios.put(`/alerts/${id}/read`);
+      
+      setAlerts(alerts.map(alert => 
+        alert._id === id ? { ...alert, isRead: true } : alert
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Error marking alert as read:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const markAsResolved = async (id) => {
+    try {
+      setActionLoading(id);
+      await axios.put(`/alerts/${id}/resolve`);
+      
+      setAlerts(alerts.map(alert => 
+        alert._id === id ? { ...alert, isResolved: true } : alert
+      ));
+    } catch (err) {
+      console.error('Error resolving alert:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const deleteAlert = async (id) => {
+    if (!window.confirm('Delete this alert?')) return;
+
+    try {
+      setActionLoading(id);
+      await axios.delete(`/alerts/${id}`);
+      
+      const updatedAlerts = alerts.filter(alert => alert._id !== id);
+      setAlerts(updatedAlerts);
+      
+      const deletedAlert = alerts.find(alert => alert._id === id);
+      if (deletedAlert && !deletedAlert.isRead) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (err) {
+      console.error('Error deleting alert:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      setLoading(true);
+      const unreadAlerts = alerts.filter(a => !a.isRead);
+      for (const alert of unreadAlerts) {
+        await axios.put(`/alerts/${alert._id}/read`);
+      }
+      
+      setAlerts(alerts.map(alert => ({ ...alert, isRead: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredAlerts = alerts.filter(alert => {
@@ -124,46 +196,42 @@ export default function Alerts() {
     return true;
   });
 
-  const unreadCount = alerts.filter(a => !a.isRead).length;
+  if (loading && alerts.length === 0) {
+    return (
+      <div className="alerts-loading">
+        <FontAwesomeIcon icon={faSpinner} spin />
+        <p>Loading alerts...</p>
+      </div>
+    );
+  }
 
-  const markAsRead = (id) => {
-    setAlerts(alerts.map(alert => 
-      alert.id === id ? { ...alert, isRead: true } : alert
-    ));
-  };
-
-  const markAsResolved = (id) => {
-    setAlerts(alerts.map(alert => 
-      alert.id === id ? { ...alert, isResolved: true } : alert
-    ));
-  };
-
-  const deleteAlert = (id) => {
-    setAlerts(alerts.filter(alert => alert.id !== id));
-  };
-
-  const markAllAsRead = () => {
-    setAlerts(alerts.map(alert => ({ ...alert, isRead: true })));
-  };
+  if (error) {
+    return (
+      <div className="alerts-error">
+        <p>{error}</p>
+        <button onClick={() => { fetchAlerts(); fetchUnreadCount(); }} className="retry-btn">
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="alerts-container">
-      {/* Header */}
       <div className="alerts-header">
         <div className="alerts-header-left">
-          <h2>Alerts</h2>
+          <h2>🔔 Alerts</h2>
           {unreadCount > 0 && (
-            <span className="alerts-badge">{unreadCount}</span>
+            <span className="alerts-badge">{unreadCount} new</span>
           )}
         </div>
         {unreadCount > 0 && (
           <button className="alerts-mark-all" onClick={markAllAsRead}>
-            <FontAwesomeIcon icon={faCheck} /> Mark all read
+            <FontAwesomeIcon icon={faCheck} /> <span>Mark all read</span>
           </button>
         )}
       </div>
 
-      {/* Filters */}
       <div className="alerts-filters">
         <button
           className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
@@ -181,22 +249,21 @@ export default function Alerts() {
           className={`filter-btn ${filter === 'resolved' ? 'active' : ''}`}
           onClick={() => setFilter('resolved')}
         >
-          Resolved
+          Resolved ({alerts.filter(a => a.isResolved).length})
         </button>
       </div>
 
-      {/* Alert List */}
       <div className="alerts-list">
         {filteredAlerts.length === 0 ? (
           <div className="alerts-empty">
             <FontAwesomeIcon icon={faBell} />
-            <p>No alerts found</p>
-            <span>You're all caught up!</span>
+            <p>All clear!</p>
+            <span>No alerts to display</span>
           </div>
         ) : (
           filteredAlerts.map((alert) => (
             <div 
-              key={alert.id} 
+              key={alert._id} 
               className={`alert-item ${!alert.isRead ? 'unread' : ''} ${alert.isResolved ? 'resolved' : ''}`}
             >
               <div 
@@ -212,20 +279,21 @@ export default function Alerts() {
               <div className="alert-content">
                 <div className="alert-top">
                   <div className="alert-type">
+                    <FontAwesomeIcon icon={getTypeIcon(alert.type)} className="alert-type-icon" />
                     <span className="alert-type-label">{getTypeLabel(alert.type)}</span>
                     {!alert.isRead && <span className="alert-dot"><FontAwesomeIcon icon={faCircle} /></span>}
-                    {alert.isResolved && <span className="alert-resolved-badge">Resolved</span>}
+                    {alert.isResolved && <span className="alert-resolved-badge">✓ Resolved</span>}
                   </div>
                   <span className="alert-time">
-                    <FontAwesomeIcon icon={faClock} /> {alert.time}
+                    <FontAwesomeIcon icon={faClock} /> {formatDate(alert.createdAt)}
                   </span>
                 </div>
 
                 <h4 className="alert-title">{alert.title}</h4>
                 <p className="alert-message">{alert.message}</p>
                 
-                {alert.product && (
-                  <span className="alert-product">📦 {alert.product}</span>
+                {alert.productName && (
+                  <span className="alert-product">📦 {alert.productName}</span>
                 )}
               </div>
 
@@ -233,27 +301,42 @@ export default function Alerts() {
                 {!alert.isRead && (
                   <button 
                     className="alert-read-btn"
-                    onClick={() => markAsRead(alert.id)}
+                    onClick={() => markAsRead(alert._id)}
+                    disabled={actionLoading === alert._id}
                     title="Mark as read"
                   >
-                    <FontAwesomeIcon icon={faCheck} />
+                    {actionLoading === alert._id ? (
+                      <FontAwesomeIcon icon={faSpinner} spin />
+                    ) : (
+                      <FontAwesomeIcon icon={faCheck} />
+                    )}
                   </button>
                 )}
                 {!alert.isResolved && (
                   <button 
                     className="alert-resolve-btn"
-                    onClick={() => markAsResolved(alert.id)}
+                    onClick={() => markAsResolved(alert._id)}
+                    disabled={actionLoading === alert._id}
                     title="Resolve"
                   >
-                    <FontAwesomeIcon icon={faCircleCheck} />
+                    {actionLoading === alert._id ? (
+                      <FontAwesomeIcon icon={faSpinner} spin />
+                    ) : (
+                      <FontAwesomeIcon icon={faCircleCheck} />
+                    )}
                   </button>
                 )}
                 <button 
                   className="alert-delete-btn"
-                  onClick={() => deleteAlert(alert.id)}
+                  onClick={() => deleteAlert(alert._id)}
+                  disabled={actionLoading === alert._id}
                   title="Delete"
                 >
-                  <FontAwesomeIcon icon={faTrash} />
+                  {actionLoading === alert._id ? (
+                    <FontAwesomeIcon icon={faSpinner} spin />
+                  ) : (
+                    <FontAwesomeIcon icon={faTrash} />
+                  )}
                 </button>
               </div>
             </div>

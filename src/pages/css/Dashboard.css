@@ -289,3 +289,8 @@
     color: #2D6B55;
   }
 }
+
+/* Add this to your Dashboard.css */
+.activity-dot.alert {
+  background: #C0392B;
+}

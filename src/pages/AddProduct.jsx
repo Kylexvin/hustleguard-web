@@ -1,7 +1,8 @@
-// src/pages/AddProduct.jsx - Simplified version
+// src/pages/AddProduct.jsx
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faArrowLeft, 
@@ -76,12 +77,12 @@ export default function AddProduct() {
       setFormData({
         name: product.name || '',
         category: product.category || '',
-        buyingPrice: product.buyingPrice || '',
-        sellingPrice: product.sellingPrice || '',
-        quantity: product.quantity || '',
+        buyingPrice: product.buyingPrice !== undefined ? product.buyingPrice : '',
+        sellingPrice: product.sellingPrice !== undefined ? product.sellingPrice : '',
+        quantity: product.quantity !== undefined ? product.quantity : '',
         minStockAlert: product.minStockAlert || '3',
         supplier: product.supplier || '',
-        supplierPrice: product.supplierPrice || '',
+        supplierPrice: product.supplierPrice !== undefined ? product.supplierPrice : '',
         description: product.description || '',
         barcode: product.barcode || '',
         unit: product.unit || 'pcs'
@@ -101,10 +102,81 @@ export default function AddProduct() {
   }, [isEditing, fetchProduct]);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    if (error) setError(null);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      category: '',
+      buyingPrice: '',
+      sellingPrice: '',
+      quantity: '',
+      minStockAlert: '3',
+      supplier: '',
+      supplierPrice: '',
+      description: '',
+      barcode: '',
+      unit: 'pcs'
+    });
+    setError(null);
+  };
+
+  const showSuccessDialog = (productName, isEdit) => {
+    if (isEdit) {
+      // For editing: Just show success and go to products
+      Swal.fire({
+        title: 'Product Updated!',
+        text: `"${productName}" has been updated successfully.`,
+        icon: 'success',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'View Products',
+        backdrop: 'rgba(0,0,0,0.4)',
+        showClass: {
+          popup: 'animate__animated animate__fadeInDown'
+        },
+        hideClass: {
+          popup: 'animate__animated animate__fadeOutUp'
+        }
+      }).then(() => {
+        navigate('/products');
+      });
+    } else {
+      // For adding: Ask if user wants to add more
+      Swal.fire({
+        title: 'Product Added!',
+        text: `"${productName}" has been added to your inventory.`,
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Add Another Product',
+        cancelButtonText: 'View Products',
+        backdrop: 'rgba(0,0,0,0.4)',
+        showClass: {
+          popup: 'animate__animated animate__fadeInDown'
+        },
+        hideClass: {
+          popup: 'animate__animated animate__fadeOutUp'
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // User wants to add another product
+          resetForm();
+          // Focus on the name input
+          const nameInput = document.querySelector('input[name="name"]');
+          if (nameInput) nameInput.focus();
+        } else {
+          // User wants to view products
+          navigate('/products');
+        }
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -113,30 +185,142 @@ export default function AddProduct() {
     setError(null);
 
     try {
+      const buyingPrice = parseFloat(formData.buyingPrice);
+      const sellingPrice = parseFloat(formData.sellingPrice);
+      const quantity = parseInt(formData.quantity);
+      const minStockAlert = parseInt(formData.minStockAlert);
+
+      // Validate required fields
+      if (!formData.name || !formData.name.trim()) {
+        setError('Product name is required.');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.category) {
+        setError('Please select a category.');
+        setLoading(false);
+        return;
+      }
+
+      if (formData.buyingPrice === '' || isNaN(buyingPrice) || buyingPrice < 0) {
+        setError('Please enter a valid buying price.');
+        setLoading(false);
+        return;
+      }
+
+      if (formData.sellingPrice === '' || isNaN(sellingPrice) || sellingPrice < 0) {
+        setError('Please enter a valid selling price.');
+        setLoading(false);
+        return;
+      }
+
+      if (sellingPrice < buyingPrice) {
+        setError(`Selling price (${sellingPrice.toFixed(2)}) must be greater than or equal to buying price (${buyingPrice.toFixed(2)}).`);
+        setLoading(false);
+        return;
+      }
+
+      if (formData.quantity === '' || isNaN(quantity) || quantity < 0) {
+        setError('Please enter a valid quantity.');
+        setLoading(false);
+        return;
+      }
+
+      // Build product data
       const productData = {
-        name: formData.name,
+        name: formData.name.trim(),
         category: formData.category,
-        buyingPrice: parseFloat(formData.buyingPrice),
-        sellingPrice: parseFloat(formData.sellingPrice),
-        quantity: parseInt(formData.quantity),
-        minStockAlert: parseInt(formData.minStockAlert),
-        ...(formData.supplier && { supplier: formData.supplier }),
-        ...(formData.supplierPrice && { supplierPrice: parseFloat(formData.supplierPrice) }),
-        ...(formData.description && { description: formData.description }),
-        ...(formData.barcode && { barcode: formData.barcode }),
+        buyingPrice: buyingPrice,
+        sellingPrice: sellingPrice,
+        quantity: quantity,
         unit: formData.unit || 'pcs'
       };
 
-      if (isEditing) {
-        await axios.put(`/products/${id}`, productData);
-      } else {
-        await axios.post('/products', productData);
+      if (!isNaN(minStockAlert) && minStockAlert >= 0) {
+        productData.minStockAlert = minStockAlert;
       }
 
-      navigate('/products');
+      if (formData.supplier && formData.supplier.trim()) {
+        productData.supplier = formData.supplier.trim();
+      }
+
+      if (formData.supplierPrice && formData.supplierPrice !== '') {
+        const supplierPrice = parseFloat(formData.supplierPrice);
+        if (!isNaN(supplierPrice) && supplierPrice >= 0) {
+          productData.supplierPrice = supplierPrice;
+        }
+      }
+
+      if (formData.description && formData.description.trim()) {
+        productData.description = formData.description.trim();
+      }
+
+      if (formData.barcode && formData.barcode.trim()) {
+        const barcode = formData.barcode.trim();
+        if (/^\d+$/.test(barcode)) {
+          productData.barcode = barcode;
+        } else {
+          setError('Barcode must contain only numbers.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      console.log('Final product data being sent:', JSON.stringify(productData, null, 2));
+
+      let response;
+      if (isEditing) {
+        response = await axios.put(`/products/${id}`, productData);
+      } else {
+        response = await axios.post('/products', productData);
+      }
+
+      console.log('API Response:', response.data);
+      
+      const productName = formData.name;
+      
+      // Show success dialog with options
+      await showSuccessDialog(productName, isEditing);
+
     } catch (err) {
       console.error('Error saving product:', err);
-      setError(err.response?.data?.message || 'Failed to save product. Please try again.');
+      
+      if (err.response) {
+        console.error('Full error response:', JSON.stringify(err.response.data, null, 2));
+        console.error('Error status:', err.response.status);
+        
+        let errorMessage = 'Failed to save product.';
+        
+        if (err.response.data) {
+          if (err.response.data.message) {
+            errorMessage = err.response.data.message;
+          }
+          if (err.response.data.errors) {
+            const errorDetails = Object.values(err.response.data.errors).join(' ');
+            errorMessage = errorDetails || errorMessage;
+          }
+        }
+        
+        setError(errorMessage);
+        
+        Swal.fire({
+          title: 'Error!',
+          text: errorMessage,
+          icon: 'error',
+          confirmButtonColor: '#d33',
+          confirmButtonText: 'OK'
+        });
+      } else {
+        setError('Network error. Please check your connection.');
+        Swal.fire({
+          title: 'Error!',
+          text: 'Network error. Please check your connection.',
+          icon: 'error',
+          confirmButtonColor: '#d33',
+          confirmButtonText: 'OK'
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -150,6 +334,14 @@ export default function AddProduct() {
       </div>
     );
   }
+
+  const isSellingPriceValid = () => {
+    if (!formData.buyingPrice || !formData.sellingPrice) return true;
+    const buying = parseFloat(formData.buyingPrice);
+    const selling = parseFloat(formData.sellingPrice);
+    if (isNaN(buying) || isNaN(selling)) return true;
+    return selling >= buying;
+  };
 
   return (
     <div className="add-product-container">
@@ -168,7 +360,7 @@ export default function AddProduct() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="add-product-form">
+      <form onSubmit={handleSubmit} className="add-product-form" noValidate>
         <div className="add-product-section">
           <h3>Basic Information</h3>
           
@@ -183,6 +375,7 @@ export default function AddProduct() {
                 value={formData.name}
                 onChange={handleChange}
                 required
+                autoFocus
               />
             </div>
           </div>
@@ -213,7 +406,7 @@ export default function AddProduct() {
                 <input
                   type="text"
                   name="barcode"
-                  placeholder="Enter barcode"
+                  placeholder="Enter barcode (numbers only)"
                   value={formData.barcode}
                   onChange={handleChange}
                 />
@@ -283,8 +476,14 @@ export default function AddProduct() {
                   required
                   min="0"
                   step="0.01"
+                  className={!isSellingPriceValid() ? 'input-error' : ''}
                 />
               </div>
+              {!isSellingPriceValid() && (
+                <div className="add-product-field-error">
+                  Selling price must be greater than or equal to buying price
+                </div>
+              )}
             </div>
           </div>
 
@@ -369,7 +568,7 @@ export default function AddProduct() {
           <button 
             type="submit" 
             className="add-product-submit"
-            disabled={loading}
+            disabled={loading || !isSellingPriceValid()}
           >
             {loading ? (
               <>

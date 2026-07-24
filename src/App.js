@@ -10,7 +10,7 @@ import Layout from './components/common/Layout';
 import MobileLayout from './components/common/MobileLayout';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
-import AddProduct from './pages/AddProduct';  // ✅ Import AddProduct
+import AddProduct from './pages/AddProduct'; 
 import Sales from './pages/Sales';
 import Alerts from './pages/Alerts';
 import Settings from './pages/Settings';
@@ -19,7 +19,7 @@ import Reports from './pages/Reports';
 import axios from 'axios';
 
 // Axios config
-axios.defaults.baseURL = 'https://hustleguard.onrender.com/api';
+axios.defaults.baseURL = 'http://localhost:5000/api';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 axios.defaults.withCredentials = true;
 
@@ -66,8 +66,8 @@ function AppRoutes() {
       }>
         <Route index element={<Dashboard />} />
         <Route path="products" element={<Products />} />
-        <Route path="products/add" element={<AddProduct />} />        {/* ✅ Add route */}
-        <Route path="products/edit/:id" element={<AddProduct />} />  {/* ✅ Edit route */}
+        <Route path="products/add" element={<AddProduct />} />       
+        <Route path="products/edit/:id" element={<AddProduct />} />  
         <Route path="reports" element={<Reports />} />
         <Route path="pos" element={<Pos />} />
         <Route path="sales" element={<Sales />} />
