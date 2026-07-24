@@ -12,8 +12,7 @@ import {
   faArrowDown,
   faSpinner,
   faBell,
-  faStore,
-  faUser
+  faStore 
 } from '@fortawesome/free-solid-svg-icons';
 import './css/Dashboard.css';
 
@@ -36,7 +35,7 @@ export default function Dashboard() {
   });
   const [activities, setActivities] = useState([]);
   const [unreadAlerts, setUnreadAlerts] = useState(0);
-  const [userName, setUserName] = useState('User');
+  const [userName] = useState('User');
 
   const quickActions = [
     { id: 1, title: 'New Sale', icon: faCashRegister, path: '/pos' },
