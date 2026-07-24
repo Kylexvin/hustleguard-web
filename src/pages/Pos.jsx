@@ -1,5 +1,5 @@
 // src/pages/Pos.jsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faSearch, 
@@ -29,8 +29,8 @@ export default function Pos() {
   const recognitionRef = useRef(null);
   const timeoutRef = useRef(null);
 
-  // Sample products - replace with API data
-  const products = [
+  // Sample products - wrapped in useMemo to prevent re-creation on every render
+  const products = useMemo(() => [
     { id: 1, name: 'Laptop Pro', price: 750, stock: 10 },
     { id: 2, name: 'Wireless Mouse', price: 35, stock: 50 },
     { id: 3, name: 'Smartphone X', price: 600, stock: 5 },
@@ -39,67 +39,70 @@ export default function Pos() {
     { id: 6, name: 'Coffee Beans', price: 25, stock: 30 },
     { id: 7, name: 'Notebook', price: 8, stock: 40 },
     { id: 8, name: 'Pen Set', price: 5, stock: 60 },
-  ];
+  ], []);
 
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) && p.stock > 0
   );
 
-  // Initialize speech recognition
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'en-US';
-
-      recognitionRef.current.onresult = (event) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        setVoiceTranscript(transcript);
-        
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => {
-          if (transcript.trim()) {
-            processVoiceCommand(transcript);
-          }
-        }, 1500);
-      };
-
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        if (event.error === 'not-allowed') {
-          setVoiceStatus('idle');
-          setIsListening(false);
-          alert('Please allow microphone access to use voice features.');
-        }
-      };
-
-      recognitionRef.current.onend = () => {
-        if (isListening) {
-          try {
-            recognitionRef.current.start();
-          } catch (e) {
-            // Ignore
-          }
-        }
-      };
+  const speakResponse = useCallback((text) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      window.speechSynthesis.speak(utterance);
     }
+  }, []);
 
-    return () => {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {}
+  const addToCart = useCallback((product) => {
+    setCart(prevCart => {
+      const existing = prevCart.find(item => item.id === product.id);
+      if (existing) {
+        return prevCart.map(item => 
+          item.id === product.id 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        return [...prevCart, { ...product, quantity: 1 }];
       }
-      clearTimeout(timeoutRef.current);
-    };
-  }, [isListening]);
+    });
+  }, []);
 
-  const processVoiceCommand = (transcript) => {
+  const removeFromCart = useCallback((id) => {
+    setCart(prevCart => prevCart.filter(item => item.id !== id));
+  }, []);
+
+  const updateQuantity = useCallback((id, change) => {
+    setCart(prevCart => {
+      const updated = prevCart.map(item => {
+        if (item.id === id) {
+          const newQty = item.quantity + change;
+          return newQty > 0 ? { ...item, quantity: newQty } : null;
+        }
+        return item;
+      }).filter(item => item !== null);
+      return updated;
+    });
+  }, []);
+
+  const handleCheckout = useCallback(() => {
+    if (cart.length === 0) return;
+    
+    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const tax = total * 0.16;
+    const grandTotal = total + tax;
+    
+    speakResponse(`Total is ${grandTotal.toFixed(2)} shillings. Proceeding to checkout.`);
+    
+    alert(`Checkout successful!\nTotal: KES ${grandTotal.toFixed(2)}\nItems: ${cart.length}`);
+    
+    setCart([]);
+    setCustomer('');
+  }, [cart, speakResponse]);
+
+  const processVoiceCommand = useCallback((transcript) => {
     const lower = transcript.toLowerCase().trim();
     
     // Check for clear cart command
@@ -183,16 +186,18 @@ export default function Pos() {
 
     // If we found a match and it's at least somewhat relevant
     if (matchedProduct && matchedScore > 0) {
-      const existing = cart.find(item => item.id === matchedProduct.id);
-      if (existing) {
-        setCart(cart.map(item => 
-          item.id === matchedProduct.id 
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        ));
-      } else {
-        setCart([...cart, { ...matchedProduct, quantity: quantity }]);
-      }
+      setCart(prevCart => {
+        const existing = prevCart.find(item => item.id === matchedProduct.id);
+        if (existing) {
+          return prevCart.map(item => 
+            item.id === matchedProduct.id 
+              ? { ...item, quantity: item.quantity + quantity }
+              : item
+          );
+        } else {
+          return [...prevCart, { ...matchedProduct, quantity: quantity }];
+        }
+      });
       
       setVoiceStatus('confirmed');
       speakResponse(`Added ${quantity} ${matchedProduct.name}`);
@@ -205,17 +210,61 @@ export default function Pos() {
       speakResponse(`Sorry, I couldn't find ${productName}`);
       setVoiceStatus('idle');
     }
-  };
+  }, [cart, speakResponse, handleCheckout, updateQuantity, removeFromCart, products]);
 
-  const speakResponse = (text) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-      window.speechSynthesis.speak(utterance);
+  // Initialize speech recognition
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        setVoiceTranscript(transcript);
+        
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+          if (transcript.trim()) {
+            processVoiceCommand(transcript);
+          }
+        }, 1500);
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed') {
+          setVoiceStatus('idle');
+          setIsListening(false);
+          alert('Please allow microphone access to use voice features.');
+        }
+      };
+
+      recognitionRef.current.onend = () => {
+        if (isListening) {
+          try {
+            recognitionRef.current.start();
+          } catch (e) {
+            // Ignore
+          }
+        }
+      };
     }
-  };
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+      clearTimeout(timeoutRef.current);
+    };
+  }, [isListening, processVoiceCommand]);
 
   const toggleListening = () => {
     if (isListening) {
@@ -242,48 +291,6 @@ export default function Pos() {
       }
       speakResponse('Listening for products');
     }
-  };
-
-  const addToCart = (product) => {
-    const existing = cart.find(item => item.id === product.id);
-    if (existing) {
-      setCart(cart.map(item => 
-        item.id === product.id 
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      ));
-    } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
-    }
-  };
-
-  const removeFromCart = (id) => {
-    setCart(cart.filter(item => item.id !== id));
-  };
-
-  const updateQuantity = (id, change) => {
-    setCart(cart.map(item => {
-      if (item.id === id) {
-        const newQty = item.quantity + change;
-        return newQty > 0 ? { ...item, quantity: newQty } : item;
-      }
-      return item;
-    }).filter(item => item.quantity > 0));
-  };
-
-  const handleCheckout = () => {
-    if (cart.length === 0) return;
-    
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = total * 0.16;
-    const grandTotal = total + tax;
-    
-    speakResponse(`Total is ${grandTotal.toFixed(2)} shillings. Proceeding to checkout.`);
-    
-    alert(`Checkout successful!\nTotal: KES ${grandTotal.toFixed(2)}\nItems: ${cart.length}`);
-    
-    setCart([]);
-    setCustomer('');
   };
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
