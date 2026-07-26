@@ -14,7 +14,6 @@ import {
   faMicrophoneSlash,
   faSpinner,
   faExclamationTriangle
- 
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
@@ -37,7 +36,7 @@ export default function MobilePos() {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [barcodeError, setBarcodeError] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [cartHeight, setCartHeight] = useState(60); // 60% of screen
+  const [cartHeight, setCartHeight] = useState(60);
   
   const recognitionRef = useRef(null);
   const timeoutRef = useRef(null);
@@ -74,7 +73,6 @@ export default function MobilePos() {
       toast.success(`${product.name} added to cart`);
     }
     
-    // Auto-open cart when adding first item
     if (currentCart.length === 0) {
       setIsCartOpen(true);
     }
@@ -223,25 +221,23 @@ export default function MobilePos() {
     }
   }, [addToCart]);
 
-  // Handle checkout
+  // Handle checkout - ACTUAL SALE FUNCTION (NO VAT)
   const handleCheckout = useCallback(async () => {
     if (cart.length === 0) {
       toast.error('Cart is empty');
       return;
     }
 
+    // Calculate total (NO VAT)
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = total * 0.16;
-    const grandTotal = total + tax;
 
+    // Confirm with SweetAlert
     const result = await Swal.fire({
       title: 'Confirm Sale',
       html: `
         <div style="text-align: left;">
           <p><strong>Items:</strong> ${cart.length}</p>
-          <p><strong>Subtotal:</strong> KES ${total.toFixed(2)}</p>
-          <p><strong>Tax (16%):</strong> KES ${tax.toFixed(2)}</p>
-          <p><strong>Total:</strong> KES ${grandTotal.toFixed(2)}</p>
+          <p><strong>Total:</strong> KES ${total.toFixed(2)}</p>
           <p><strong>Customer:</strong> ${customer || 'Walk-in'}</p>
           <p><strong>Payment:</strong> ${paymentMethod}</p>
         </div>
@@ -259,9 +255,10 @@ export default function MobilePos() {
     try {
       setProcessingCheckout(true);
       
+      // Create sale for each item in cart
       const salePromises = cart.map(async (item) => {
         const saleData = {
-          product: item.id,
+          productId: item.id,
           quantity: item.quantity,
           sellingPrice: item.price,
           customer: customer || 'Walk-in Customer',
@@ -269,19 +266,20 @@ export default function MobilePos() {
           notes: `POS Sale - ${new Date().toLocaleString()}`
         };
 
+        console.log('Sending sale data:', saleData);
         const response = await axios.post('/sales', saleData);
         return response.data;
       });
 
       await Promise.all(salePromises);
       
-      toast.success(`Sale complete! Total: KES ${grandTotal.toFixed(2)}`);
+      toast.success(`Sale complete! Total: KES ${total.toFixed(2)}`);
       
       await Swal.fire({
         title: 'Sale Complete!',
         html: `
           <div style="text-align: left;">
-            <p><strong>Total:</strong> KES ${grandTotal.toFixed(2)}</p>
+            <p><strong>Total:</strong> KES ${total.toFixed(2)}</p>
             <p><strong>Items:</strong> ${cart.length}</p>
             <p><strong>Customer:</strong> ${customer || 'Walk-in'}</p>
           </div>
@@ -296,11 +294,12 @@ export default function MobilePos() {
       
     } catch (err) {
       console.error('Error processing sale:', err);
-      toast.error('Failed to process sale.');
+      const errorMsg = err.response?.data?.message || 'Failed to process sale.';
+      toast.error(errorMsg);
       
       await Swal.fire({
         title: 'Sale Failed',
-        text: 'There was an error processing your sale.',
+        text: errorMsg,
         icon: 'error',
         confirmButtonText: 'OK'
       });
@@ -499,11 +498,9 @@ export default function MobilePos() {
     handleBarcodeScan(barcodeInput);
   };
 
-  // Calculate totals
+  // Calculate totals (NO VAT)
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const tax = total * 0.16;
-  const grandTotal = total + tax;
 
   // Drag to resize cart
   const handleTouchStart = (e) => {
@@ -518,7 +515,6 @@ export default function MobilePos() {
   };
 
   const handleTouchEnd = () => {
-    // Snap to nearest preset
     if (cartHeight < 45) {
       setCartHeight(30);
     } else if (cartHeight < 65) {
@@ -709,7 +705,7 @@ export default function MobilePos() {
             <div className="mobile-cart-handle-bar"></div>
             <div className="mobile-cart-handle-info">
               <span>{itemCount} items</span>
-              <span className="mobile-cart-handle-total">KES {grandTotal.toFixed(2)}</span>
+              <span className="mobile-cart-handle-total">KES {total.toFixed(2)}</span>
             </div>
             <button 
               className="mobile-cart-close"
@@ -762,7 +758,7 @@ export default function MobilePos() {
             )}
           </div>
 
-          {/* Checkout */}
+          {/* Checkout - NO VAT */}
           <div className="mobile-cart-checkout">
             <input
               type="text"
@@ -793,18 +789,11 @@ export default function MobilePos() {
               </button>
             </div>
 
+            {/* Totals - NO VAT */}
             <div className="mobile-cart-totals">
-              <div className="mobile-total-row">
-                <span>Subtotal</span>
-                <span>KES {total.toFixed(2)}</span>
-              </div>
-              <div className="mobile-total-row">
-                <span>Tax (16%)</span>
-                <span>KES {tax.toFixed(2)}</span>
-              </div>
               <div className="mobile-total-row grand-total">
                 <span>Total</span>
-                <span>KES {grandTotal.toFixed(2)}</span>
+                <span>KES {total.toFixed(2)}</span>
               </div>
             </div>
 
@@ -820,7 +809,7 @@ export default function MobilePos() {
               ) : (
                 <>
                   <FontAwesomeIcon icon={faCreditCard} /> 
-                  Pay KES {grandTotal.toFixed(2)}
+                  Pay KES {total.toFixed(2)}
                 </>
               )}
             </button>

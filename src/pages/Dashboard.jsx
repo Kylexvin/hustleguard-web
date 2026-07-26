@@ -10,14 +10,11 @@ import {
   faChartBar,
   faArrowUp,
   faArrowDown,
-  faSpinner,
-  faBell,
-  faStore 
+  faSpinner
 } from '@fortawesome/free-solid-svg-icons';
 import './css/Dashboard.css';
 
 export default function Dashboard() {
-  // const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,8 +31,6 @@ export default function Dashboard() {
     profit: { change: '+0%', positive: true }
   });
   const [activities, setActivities] = useState([]);
-  const [unreadAlerts, setUnreadAlerts] = useState(0);
-  const [userName] = useState('User');
 
   const quickActions = [
     { id: 1, title: 'New Sale', icon: faCashRegister, path: '/pos' },
@@ -57,11 +52,6 @@ export default function Dashboard() {
       // Fetch recent sales for activity
       const salesResponse = await axios.get('/sales');
       const salesData = salesResponse.data.data || [];
-
-      // Fetch unread alerts count
-      const alertsResponse = await axios.get('/alerts/unread/count');
-      const unreadCount = alertsResponse.data.data?.unreadCount || 0;
-      setUnreadAlerts(unreadCount);
 
       // Fetch low stock products
       const lowStockResponse = await axios.get('/products/low-stock');
@@ -181,10 +171,7 @@ export default function Dashboard() {
       <div className="dashboard">
         <div className="header">
           <div className="header-top">
-            <div>
-              <div className="greeting">Loading...</div>
-              <div className="user-name">Dashboard</div>
-            </div>
+            <div className="dashboard-title">Dashboard</div>
           </div>
           <div className="stats-row">
             {[1, 2, 3, 4].map((_, i) => (
@@ -208,12 +195,7 @@ export default function Dashboard() {
     return (
       <div className="dashboard">
         <div className="header">
-          <div className="header-top">
-            <div>
-              <div className="greeting">Error</div>
-              <div className="user-name">Dashboard</div>
-            </div>
-          </div>
+
         </div>
         <div className="section" style={{ textAlign: 'center', padding: '40px 20px' }}>
           <p style={{ color: '#C0392B' }}>{error}</p>
@@ -240,24 +222,9 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
-      {/* Header */}
+      {/* Header - Clean, no greeting */}
       <div className="header">
-        <div className="header-top">
-          <div>
-            <div className="greeting">Welcome back,</div>
-            <div className="user-name">{userName}</div>
-            <div className="shop-info">
-              <FontAwesomeIcon icon={faStore} className="shop-icon" />
-              <span>My Store</span>
-            </div>
-          </div>
-          <div className="notification-badge" onClick={() => navigate('/alerts')} style={{ cursor: 'pointer' }}>
-            <FontAwesomeIcon icon={faBell} className="bell-icon" />
-            {unreadAlerts > 0 && (
-              <span className="badge">{unreadAlerts}</span>
-            )}
-          </div>
-        </div>
+   
 
         {/* Stats */}
         <div className="stats-row">

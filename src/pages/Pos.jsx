@@ -7,7 +7,6 @@ import {
   faMinus, 
   faTrash, 
   faCreditCard, 
-  faCashRegister,
   faTimes,
   faShoppingCart,
   faQrcode,
@@ -48,7 +47,7 @@ export default function Pos() {
     cartRef.current = cart;
   }, [cart]);
 
-  // Add to cart - FIXED: toast OUTSIDE the updater
+  // Add to cart
   const addToCart = useCallback((product) => {
     const currentCart = cartRef.current;
     const existing = currentCart.find(item => item.id === product.id);
@@ -209,25 +208,23 @@ export default function Pos() {
     }
   }, [addToCart]);
 
-  // Handle checkout
+  // Handle checkout - NO VAT
   const handleCheckout = useCallback(async () => {
     if (cart.length === 0) {
       toast.error('Cart is empty');
       return;
     }
 
+    // Calculate total (NO VAT)
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = total * 0.16;
-    const grandTotal = total + tax;
 
+    // Confirm with SweetAlert
     const result = await Swal.fire({
       title: 'Confirm Sale',
       html: `
         <div style="text-align: left;">
           <p><strong>Items:</strong> ${cart.length}</p>
-          <p><strong>Subtotal:</strong> KES ${total.toFixed(2)}</p>
-          <p><strong>Tax (16%):</strong> KES ${tax.toFixed(2)}</p>
-          <p><strong>Total:</strong> KES ${grandTotal.toFixed(2)}</p>
+          <p><strong>Total:</strong> KES ${total.toFixed(2)}</p>
           <p><strong>Customer:</strong> ${customer || 'Walk-in'}</p>
           <p><strong>Payment:</strong> ${paymentMethod}</p>
         </div>
@@ -245,9 +242,10 @@ export default function Pos() {
     try {
       setProcessingCheckout(true);
       
+      // Create sale for each item in cart
       const salePromises = cart.map(async (item) => {
         const saleData = {
-          product: item.id,
+          productId: item.id,
           quantity: item.quantity,
           sellingPrice: item.price,
           customer: customer || 'Walk-in Customer',
@@ -255,19 +253,20 @@ export default function Pos() {
           notes: `POS Sale - ${new Date().toLocaleString()}`
         };
 
+        console.log('Sending sale data:', saleData);
         const response = await axios.post('/sales', saleData);
         return response.data;
       });
 
       await Promise.all(salePromises);
       
-      toast.success(`Sale complete! Total: KES ${grandTotal.toFixed(2)}`);
+      toast.success(`Sale complete! Total: KES ${total.toFixed(2)}`);
       
       await Swal.fire({
         title: 'Sale Complete!',
         html: `
           <div style="text-align: left;">
-            <p><strong>Total:</strong> KES ${grandTotal.toFixed(2)}</p>
+            <p><strong>Total:</strong> KES ${total.toFixed(2)}</p>
             <p><strong>Items:</strong> ${cart.length}</p>
             <p><strong>Customer:</strong> ${customer || 'Walk-in'}</p>
           </div>
@@ -281,11 +280,12 @@ export default function Pos() {
       
     } catch (err) {
       console.error('Error processing sale:', err);
-      toast.error('Failed to process sale. Please try again.');
+      const errorMsg = err.response?.data?.message || 'Failed to process sale.';
+      toast.error(errorMsg);
       
       await Swal.fire({
         title: 'Sale Failed',
-        text: 'There was an error processing your sale. Please try again.',
+        text: errorMsg,
         icon: 'error',
         confirmButtonText: 'OK'
       });
@@ -485,11 +485,9 @@ export default function Pos() {
     handleBarcodeScan(barcodeInput);
   };
 
-  // Calculate totals
+  // Calculate totals (NO VAT)
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const tax = total * 0.16;
-  const grandTotal = total + tax;
 
   const voiceCommands = [
     'Add [product name]',
@@ -534,7 +532,6 @@ export default function Pos() {
           {/* Header */}
           <div className="pos-header">
             <div className="pos-header-left">
-              <FontAwesomeIcon icon={faCashRegister} className="pos-header-icon" />
               <h2>POS</h2>
             </div>
             <div className="pos-header-right">
@@ -749,7 +746,7 @@ export default function Pos() {
               )}
             </div>
 
-            {/* Checkout */}
+            {/* Checkout - NO VAT */}
             <div className="pos-checkout">
               {/* Customer Input */}
               <div className="pos-checkout-row">
@@ -786,19 +783,11 @@ export default function Pos() {
                 </div>
               </div>
 
-              {/* Totals */}
+              {/* Totals - NO VAT */}
               <div className="pos-totals">
-                <div className="pos-total-row">
-                  <span>Subtotal</span>
-                  <span>KES {total.toFixed(2)}</span>
-                </div>
-                <div className="pos-total-row">
-                  <span>Tax (16%)</span>
-                  <span>KES {tax.toFixed(2)}</span>
-                </div>
                 <div className="pos-total-row grand-total">
                   <span>Total</span>
-                  <span>KES {grandTotal.toFixed(2)}</span>
+                  <span>KES {total.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -815,7 +804,7 @@ export default function Pos() {
                 ) : (
                   <>
                     <FontAwesomeIcon icon={faCreditCard} /> 
-                    Pay KES {grandTotal.toFixed(2)}
+                    Pay KES {total.toFixed(2)}
                   </>
                 )}
               </button>
