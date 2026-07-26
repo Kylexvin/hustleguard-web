@@ -15,6 +15,7 @@ import Sales from './pages/Sales';
 import Alerts from './pages/Alerts';
 import Settings from './pages/Settings';
 import Pos from './pages/Pos';
+import MobilePos from './pages/MobilePos'; // Import mobile POS
 import Reports from './pages/Reports';
 import axios from 'axios';
 
@@ -69,7 +70,8 @@ function AppRoutes() {
         <Route path="products/add" element={<AddProduct />} />       
         <Route path="products/edit/:id" element={<AddProduct />} />  
         <Route path="reports" element={<Reports />} />
-        <Route path="pos" element={<Pos />} />
+        {/* Use MobilePos on mobile, Pos on desktop */}
+        <Route path="pos" element={isMobile ? <MobilePos /> : <Pos />} />
         <Route path="sales" element={<Sales />} />
         <Route path="alerts" element={<Alerts />} />
         <Route path="settings" element={<Settings />} />
@@ -83,7 +85,32 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <AppRoutes />
-        <Toaster position="top-right" />
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+              borderRadius: '8px',
+              padding: '12px 16px',
+            },
+            success: {
+              duration: 3000,
+              iconTheme: {
+                primary: '#4ade80',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              duration: 4000,
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
       </AuthProvider>
     </BrowserRouter>
   );

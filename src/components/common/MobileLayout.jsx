@@ -1,3 +1,4 @@
+// src/components/common/MobileLayout.jsx
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -10,7 +11,7 @@ import {
   faUser,
   faRightFromBracket
 } from '@fortawesome/free-solid-svg-icons';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import './css/MobileLayout.css';
 
 export default function MobileLayout() {
@@ -18,6 +19,15 @@ export default function MobileLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const bottomNavRef = useRef(null);
+  const [bottomNavHeight, setBottomNavHeight] = useState(70);
+
+  // Measure bottom nav height
+  useEffect(() => {
+    if (bottomNavRef.current) {
+      setBottomNavHeight(bottomNavRef.current.offsetHeight);
+    }
+  }, []);
 
   const tabs = [
     { label: 'Home', icon: faHome, path: '/' },
@@ -28,7 +38,6 @@ export default function MobileLayout() {
 
   const currentPath = location.pathname;
 
-  // Check if path matches (including sub-routes)
   const isActive = (path) => {
     if (path === '/') return currentPath === '/';
     return currentPath.startsWith(path);
@@ -59,13 +68,19 @@ export default function MobileLayout() {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="mobile-content">
+      {/* Content - Pass bottom nav height as CSS variable */}
+      <div 
+        className="mobile-content"
+        style={{ 
+          '--bottom-nav-height': `${bottomNavHeight}px`,
+          paddingBottom: `${bottomNavHeight}px`
+        }}
+      >
         <Outlet />
       </div>
 
       {/* Bottom Nav */}
-      <div className="bottom-nav">
+      <div className="bottom-nav" ref={bottomNavRef}>
         {tabs.map((tab) => (
           <div
             key={tab.path}
