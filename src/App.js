@@ -15,7 +15,7 @@ import Sales from './pages/Sales';
 import Alerts from './pages/Alerts';
 import Settings from './pages/Settings';
 import Pos from './pages/Pos';
-import MobilePos from './pages/MobilePos'; // Import mobile POS
+import MobilePos from './pages/MobilePos'; 
 import Reports from './pages/Reports';
 import axios from 'axios';
 
