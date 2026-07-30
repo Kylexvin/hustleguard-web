@@ -10,7 +10,9 @@ import {
   faChartBar,
   faArrowUp,
   faArrowDown,
-  faSpinner
+  faSpinner,
+  faStore,
+  faCoins
 } from '@fortawesome/free-solid-svg-icons';
 import './css/Dashboard.css';
 
@@ -22,13 +24,19 @@ export default function Dashboard() {
     revenue: 'KES 0',
     sales: '0',
     lowStock: '0',
-    profit: 'KES 0'
+    profit: 'KES 0',
+    inventoryValue: 'KES 0',
+    weeklySales: 'KES 0',
+    weeklyGrossProfit: 'KES 0'
   });
   const [statsChanges, setStatsChanges] = useState({
     revenue: { change: '+0%', positive: true },
     sales: { change: '+0%', positive: true },
     lowStock: { change: '0', positive: false },
-    profit: { change: '+0%', positive: true }
+    profit: { change: '+0%', positive: true },
+    inventoryValue: { change: 'Current', positive: true },
+    weeklySales: { change: 'This Week', positive: true },
+    weeklyGrossProfit: { change: 'This Week', positive: true }
   });
   const [activities, setActivities] = useState([]);
 
@@ -57,6 +65,10 @@ export default function Dashboard() {
       const lowStockResponse = await axios.get('/products/low-stock');
       const lowStockData = lowStockResponse.data.data || [];
 
+      // Fetch dashboard stats (inventory, weekly sales, weekly profit)
+      const dashboardStatsResponse = await axios.get('/dashboard/stats');
+      const dashboardStats = dashboardStatsResponse.data.data;
+
       // Calculate stats
       const todayRevenue = stats.today?.totalRevenue || 0;
       const monthRevenue = stats.month?.totalRevenue || 0;
@@ -80,7 +92,10 @@ export default function Dashboard() {
         revenue: `KES ${todayRevenue.toLocaleString()}`,
         sales: todaySales.toString(),
         lowStock: lowStockData.length.toString(),
-        profit: `KES ${todayProfit.toLocaleString()}`
+        profit: `KES ${todayProfit.toLocaleString()}`,
+        inventoryValue: `KES ${dashboardStats.inventoryValue.toLocaleString()}`,
+        weeklySales: `KES ${dashboardStats.weeklySales.toLocaleString()}`,
+        weeklyGrossProfit: `KES ${dashboardStats.weeklyGrossProfit.toLocaleString()}`
       });
 
       setStatsChanges({
@@ -99,6 +114,18 @@ export default function Dashboard() {
         profit: { 
           change: `${profitChange >= 0 ? '+' : ''}${profitChange.toFixed(1)}%`, 
           positive: profitChange >= 0 
+        },
+        inventoryValue: { 
+          change: 'Current', 
+          positive: true 
+        },
+        weeklySales: { 
+          change: 'This Week', 
+          positive: true 
+        },
+        weeklyGrossProfit: { 
+          change: 'This Week', 
+          positive: true 
         }
       });
 
@@ -158,12 +185,19 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Stats array for rendering
-  const stats = [
+  // Main stats (4 cards)
+  const mainStats = [
     { label: 'Revenue', value: statsData.revenue, change: statsChanges.revenue.change, positive: statsChanges.revenue.positive },
     { label: 'Sales', value: statsData.sales, change: statsChanges.sales.change, positive: statsChanges.sales.positive },
     { label: 'Low Stock', value: statsData.lowStock, change: statsChanges.lowStock.change, positive: statsChanges.lowStock.positive },
     { label: 'Profit', value: statsData.profit, change: statsChanges.profit.change, positive: statsChanges.profit.positive },
+  ];
+
+  // New stats (3 summary stats)
+  const summaryStats = [
+    { label: 'Inventory Value', value: statsData.inventoryValue, icon: faStore },
+    { label: 'Weekly Sales', value: statsData.weeklySales, icon: faChartBar },
+    { label: 'Weekly Profit', value: statsData.weeklyGrossProfit, icon: faCoins },
   ];
 
   if (loading) {
@@ -222,13 +256,11 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
-      {/* Header - Clean, no greeting */}
+      {/* Header */}
       <div className="header">
-   
-
-        {/* Stats */}
+        {/* Stats - Main 4 cards */}
         <div className="stats-row">
-          {stats.map((stat, i) => (
+          {mainStats.map((stat, i) => (
             <div className="stat-card" key={i}>
               <div className="stat-header">
                 <div className="stat-icon">
@@ -244,6 +276,21 @@ export default function Dashboard() {
               </div>
               <div className="stat-value">{stat.value}</div>
               <div className="stat-label">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Summary Stats - 3 new stats as a compact row */}
+        <div className="summary-stats-row">
+          {summaryStats.map((stat, i) => (
+            <div className="summary-stat-item" key={i}>
+              <div className="summary-stat-icon">
+                <FontAwesomeIcon icon={stat.icon} />
+              </div>
+              <div className="summary-stat-content">
+                <div className="summary-stat-value">{stat.value}</div>
+                <div className="summary-stat-label">{stat.label}</div>
+              </div>
             </div>
           ))}
         </div>
