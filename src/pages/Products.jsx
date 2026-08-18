@@ -12,7 +12,10 @@ import {
   faTimes,
   faSpinner,
   faExclamationTriangle,
-  faShoppingCart
+  faShoppingCart,
+  faPackage,
+  faTags,
+  faLayerGroup
 } from '@fortawesome/free-solid-svg-icons';
 import './css/Products.css';
 
@@ -31,12 +34,16 @@ export default function Products() {
     fetchProducts();
   }, []);
 
+  // ============================================================
+  // Fetch products with UOM and stock info
+  // ============================================================
   const fetchProducts = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await axios.get('/products');
       const productData = response.data.data || [];
+      
       setProducts(productData);
       
       const uniqueCategories = ['All', ...new Set(productData.map(p => p.category).filter(Boolean))];
@@ -49,8 +56,11 @@ export default function Products() {
     }
   };
 
+  // ============================================================
+  // Delete product (soft delete)
+  // ============================================================
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete "${name}"?`)) return;
+    if (!window.confirm(`Delete "${name}"? This will deactivate the product.`)) return;
 
     try {
       setDeleting(id);
@@ -66,24 +76,72 @@ export default function Products() {
       }
     } catch (err) {
       console.error('Error deleting product:', err);
-      alert('Failed to delete product.');
+      alert(err.response?.data?.message || 'Failed to delete product. Please remove stock first.');
     } finally {
       setDeleting(null);
     }
   };
 
+  // ============================================================
+  // Helpers
+  // ============================================================
+  const getStock = (product) => {
+    return product.totalStock || product.quantity || 0;
+  };
+
+  const getBaseUnitLabel = (product) => {
+    return product.baseUnit?.label || product.unit || 'Unit';
+  };
+
+  const getSellUnitsCount = (product) => {
+    return product.sellUnits?.filter(u => u.isActive !== false).length || 1;
+  };
+
+  const getPrimaryPrice = (product) => {
+    const baseUnit = product.sellUnits?.find(u => u.isBase);
+    return baseUnit?.sellPrice || product.sellingPrice || 0;
+  };
+
+  const getStockStatus = (stock, minStock) => {
+    if (stock === 0) return { label: 'Out of Stock', class: 'out' };
+    if (stock <= minStock) return { label: 'Low Stock', class: 'low' };
+    return { label: 'In Stock', class: 'in' };
+  };
+
+  const getLowStockCount = () => {
+    return products.filter(p => {
+      const stock = getStock(p);
+      const min = p.minStockAlert || 5;
+      return stock <= min && stock > 0;
+    }).length;
+  };
+
+  const getOutOfStockCount = () => {
+    return products.filter(p => getStock(p) === 0).length;
+  };
+
+  // ============================================================
+  // Filter logic
+  // ============================================================
   const getFilteredProducts = () => {
     let filtered = products;
 
+    const stock = (p) => getStock(p);
+    const minStock = (p) => p.minStockAlert || 5;
+
     if (selectedTab === 'low-stock') {
-      filtered = filtered.filter(p => p.quantity <= p.minStockAlert && p.quantity > 0);
+      filtered = filtered.filter(p => stock(p) <= minStock(p) && stock(p) > 0);
     } else if (selectedTab === 'out-of-stock') {
-      filtered = filtered.filter(p => p.quantity === 0);
+      filtered = filtered.filter(p => stock(p) === 0);
     }
 
     if (search) {
+      const term = search.toLowerCase();
       filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(search.toLowerCase())
+        p.name.toLowerCase().includes(term) ||
+        p.category?.toLowerCase().includes(term) ||
+        p.sellUnits?.some(u => u.barcode?.includes(term)) ||
+        p.stockUnits?.some(u => u.barcode?.includes(term))
       );
     }
 
@@ -96,20 +154,9 @@ export default function Products() {
 
   const filteredProducts = getFilteredProducts();
 
-  const getStockStatus = (stock, minStock) => {
-    if (stock === 0) return { label: 'Out of Stock', class: 'out' };
-    if (stock <= minStock) return { label: 'Low Stock', class: 'low' };
-    return { label: 'In Stock', class: 'in' };
-  };
-
-  const getLowStockCount = () => {
-    return products.filter(p => p.quantity <= p.minStockAlert && p.quantity > 0).length;
-  };
-
-  const getOutOfStockCount = () => {
-    return products.filter(p => p.quantity === 0).length;
-  };
-
+  // ============================================================
+  // Render
+  // ============================================================
   if (loading) {
     return (
       <div className="products-loading">
@@ -134,7 +181,7 @@ export default function Products() {
       <div className="products-header">
         <h2>Products</h2>
         <button className="add-product-btn" onClick={() => navigate('/products/add')}>
-          <FontAwesomeIcon icon={faPlus} /> Add
+          <FontAwesomeIcon icon={faPlus} /> Add Product
         </button>
       </div>
 
@@ -173,7 +220,7 @@ export default function Products() {
           <FontAwesomeIcon icon={faSearch} className="products-search-icon" />
           <input
             type="text"
-            placeholder="Search products..."
+            placeholder="Search by name, barcode, category..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -207,9 +254,14 @@ export default function Products() {
           </div>
         ) : (
           filteredProducts.map((product) => {
-            const status = getStockStatus(product.quantity, product.minStockAlert);
-            const isLowStock = product.quantity <= product.minStockAlert;
-            const isOutOfStock = product.quantity === 0;
+            const stock = getStock(product);
+            const minStock = product.minStockAlert || 5;
+            const status = getStockStatus(stock, minStock);
+            const isLowStock = stock <= minStock && stock > 0;
+            const isOutOfStock = stock === 0;
+            const baseUnitLabel = getBaseUnitLabel(product);
+            const unitCount = getSellUnitsCount(product);
+            const primaryPrice = getPrimaryPrice(product);
             
             return (
               <div 
@@ -220,9 +272,11 @@ export default function Products() {
                 <div className="product-card-top">
                   <div className="product-name">
                     <h4>{product.name}</h4>
-                    <span className="product-category">{product.category}</span>
-                    {product.barcode && (
-                      <span className="product-barcode">{product.barcode}</span>
+                    <span className="product-category">{product.category || 'Uncategorized'}</span>
+                    {product.sellUnits?.some(u => u.barcode) && (
+                      <span className="product-barcode">
+                        {product.sellUnits.find(u => u.barcode)?.barcode}
+                      </span>
                     )}
                   </div>
                   <div className="product-card-actions">
@@ -254,62 +308,42 @@ export default function Products() {
                     <span className={`stock-badge ${status.class}`}>
                       {status.label}
                     </span>
-                    <span className="stock-quantity">{product.quantity} {product.unit}</span>
+                    <span className="stock-quantity">
+                      {stock} {baseUnitLabel}s
+                    </span>
                     {isLowStock && !isOutOfStock && (
-                      <span className="stock-warning">Min: {product.minStockAlert}</span>
+                      <span className="stock-warning">Min: {minStock}</span>
                     )}
                   </div>
                   <div className="product-price-info">
-                    <span className="selling-price">KES {product.sellingPrice}</span>
-                    <span className="buying-price">Buy: KES {product.buyingPrice}</span>
+                    <span className="selling-price">KES {primaryPrice}</span>
+                    {unitCount > 1 && (
+                      <span className="unit-count" title="Multiple sell units available">
+                        <FontAwesomeIcon icon={faTags} /> {unitCount} units
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* Bottom: Quick stock adjust */}
+                {/* ============================================================
+                    BOTTOM: Actions with Stock button linking to ProductStock page
+                    ============================================================ */}
                 <div className="product-card-bottom">
-                  <div className="stock-adjust">
-                    <button
-                      className="stock-btn minus"
-                      onClick={() => {
-                        const newQty = product.quantity - 1;
-                        if (newQty < 0) return;
-                        axios.patch(`/products/${product._id}/stock`, { quantityChange: -1 })
-                          .then(() => {
-                            const updated = products.map(p =>
-                              p._id === product._id ? { ...p, quantity: newQty } : p
-                            );
-                            setProducts(updated);
-                          })
-                          .catch(err => console.error(err));
-                      }}
-                      disabled={product.quantity === 0}
+                  <div className="product-actions">
+                    <button 
+                      className="view-btn"
+                      onClick={() => navigate(`/products/edit/${product._id}`)}
                     >
-                      −
+                      <FontAwesomeIcon icon={faEdit} /> Edit
                     </button>
-                    <span className="qty">{product.quantity}</span>
-                    <button
-                      className="stock-btn plus"
-                      onClick={() => {
-                        const newQty = product.quantity + 1;
-                        axios.patch(`/products/${product._id}/stock`, { quantityChange: 1 })
-                          .then(() => {
-                            const updated = products.map(p =>
-                              p._id === product._id ? { ...p, quantity: newQty } : p
-                            );
-                            setProducts(updated);
-                          })
-                          .catch(err => console.error(err));
-                      }}
+                    <button 
+                      className="stock-btn"
+                      onClick={() => navigate(`/products/${product._id}/stock`)}
+                      title="Manage Stock"
                     >
-                      +
+                      <FontAwesomeIcon icon={faLayerGroup} /> Stock
                     </button>
                   </div>
-                  <button 
-                    className="view-btn"
-                    onClick={() => navigate(`/products/edit/${product._id}`)}
-                  >
-                    View
-                  </button>
                 </div>
               </div>
             );

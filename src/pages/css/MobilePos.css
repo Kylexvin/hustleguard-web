@@ -718,3 +718,49 @@
   cursor: not-allowed;
   box-shadow: none;
 }
+/* Spin animation for loader */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Product unit buttons */
+.mobile-product-units {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.mobile-unit-btn {
+  font-size: 10px;
+  padding: 2px 8px;
+  border: 1px solid #E2E8F0;
+  border-radius: 4px;
+  background: #F8FAFC;
+  color: #1B4D3D;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mobile-unit-btn:hover {
+  background: #1B4D3D;
+  color: #FFF;
+  border-color: #1B4D3D;
+}
+
+.mobile-unit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Cart item unit label */
+.mobile-cart-item-unit {
+  font-size: 11px;
+  color: #94A3B8;
+  font-weight: 400;
+}

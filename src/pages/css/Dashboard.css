@@ -437,3 +437,68 @@
     gap: 6px;
   }
 }
+/* Dashboard.css - Add these styles */
+
+/* Extra Metrics Row */
+.extra-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.extra-metric-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  background: #F8FAFC;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+}
+
+.extra-metric-item.warning {
+  border-color: #F59E0B;
+  background: #FFFBEB;
+}
+
+.extra-metric-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E2E8F0;
+  border-radius: 8px;
+  color: #1B4D3D;
+}
+
+.extra-metric-item.warning .extra-metric-icon {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.extra-metric-content {
+  flex: 1;
+}
+
+.extra-metric-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.extra-metric-label {
+  font-size: 13px;
+  color: #64748B;
+}
+
+/* Activity item clickable */
+.activity-item {
+  cursor: default;
+  transition: background 0.2s;
+}
+
+.activity-item[style*="cursor: pointer"]:hover {
+  background: #F1F5F9;
+}

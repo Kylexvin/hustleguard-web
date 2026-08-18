@@ -2,18 +2,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faCashRegister, 
-  faBox, 
-  faClock, 
-  faChartBar,
-  faArrowUp,
-  faArrowDown,
-  faSpinner,
-  faStore,
-  faCoins
-} from '@fortawesome/free-solid-svg-icons';
+  ShoppingBag,
+  Package,
+  Clock,
+  ChartBar,
+  ArrowUp,
+  ArrowDown,
+  LoaderCircle,
+  Store,
+  Coins
+} from 'lucide-react';
 import './css/Dashboard.css';
 
 export default function Dashboard() {
@@ -41,10 +40,10 @@ export default function Dashboard() {
   const [activities, setActivities] = useState([]);
 
   const quickActions = [
-    { id: 1, title: 'New Sale', icon: faCashRegister, path: '/pos' },
-    { id: 2, title: 'Add Stock', icon: faBox, path: '/products/add' },
-    { id: 3, title: 'History', icon: faClock, path: '/sales' },
-    { id: 4, title: 'Reports', icon: faChartBar, path: '/reports' },
+    { id: 1, title: 'New Sale', icon: ShoppingBag, path: '/pos' },
+    { id: 2, title: 'Add Stock', icon: Package, path: '/products/add' },
+    { id: 3, title: 'History', icon: Clock, path: '/sales' },
+    { id: 4, title: 'Reports', icon: ChartBar, path: '/reports' },
   ];
 
   // Fetch dashboard data
@@ -53,31 +52,25 @@ export default function Dashboard() {
       setLoading(true);
       setError(null);
 
-      // Fetch sales stats
       const statsResponse = await axios.get('/sales/stats');
       const stats = statsResponse.data.data;
 
-      // Fetch recent sales for activity
-      const salesResponse = await axios.get('/sales');
-      const salesData = salesResponse.data.data || [];
-
-      // Fetch low stock products
       const lowStockResponse = await axios.get('/products/low-stock');
       const lowStockData = lowStockResponse.data.data || [];
 
-      // Fetch dashboard stats (inventory, weekly sales, weekly profit)
       const dashboardStatsResponse = await axios.get('/dashboard/stats');
-      const dashboardStats = dashboardStatsResponse.data.data;
+      const dashboardStatsData = dashboardStatsResponse.data.data;
 
-      // Calculate stats
+      const salesResponse = await axios.get('/sales?limit=10');
+      const salesData = salesResponse.data.data || [];
+
       const todayRevenue = stats.today?.totalRevenue || 0;
-      const monthRevenue = stats.month?.totalRevenue || 0;
       const todaySales = stats.today?.totalSales || 0;
-      const monthSales = stats.month?.totalSales || 0;
       const todayProfit = stats.today?.totalProfit || 0;
+      const monthRevenue = stats.month?.totalRevenue || 0;
+      const monthSales = stats.month?.totalSales || 0;
       const monthProfit = stats.month?.totalProfit || 0;
 
-      // Calculate changes
       const yesterdayRevenue = monthRevenue - todayRevenue;
       const revenueChange = yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100) : 0;
 
@@ -87,15 +80,14 @@ export default function Dashboard() {
       const yesterdayProfit = monthProfit - todayProfit;
       const profitChange = yesterdayProfit > 0 ? ((todayProfit - yesterdayProfit) / yesterdayProfit * 100) : 0;
 
-      // Set stats values
       setStatsData({
         revenue: `KES ${todayRevenue.toLocaleString()}`,
         sales: todaySales.toString(),
-        lowStock: lowStockData.length.toString(),
+        lowStock: (dashboardStatsData.lowStockCount || lowStockData.length).toString(),
         profit: `KES ${todayProfit.toLocaleString()}`,
-        inventoryValue: `KES ${dashboardStats.inventoryValue.toLocaleString()}`,
-        weeklySales: `KES ${dashboardStats.weeklySales.toLocaleString()}`,
-        weeklyGrossProfit: `KES ${dashboardStats.weeklyGrossProfit.toLocaleString()}`
+        inventoryValue: `KES ${(dashboardStatsData.inventoryValue || 0).toLocaleString()}`,
+        weeklySales: `KES ${(dashboardStatsData.weeklySales || 0).toLocaleString()}`,
+        weeklyGrossProfit: `KES ${(dashboardStatsData.weeklyGrossProfit || 0).toLocaleString()}`
       });
 
       setStatsChanges({
@@ -108,7 +100,7 @@ export default function Dashboard() {
           positive: salesChange >= 0 
         },
         lowStock: { 
-          change: `${lowStockData.length} items`, 
+          change: `${dashboardStatsData.lowStockCount || 0} items`, 
           positive: false 
         },
         profit: { 
@@ -130,25 +122,53 @@ export default function Dashboard() {
       });
 
       // Build activities from recent sales
-      const recentSales = salesData.slice(0, 5);
-      const activitiesList = recentSales.map(sale => ({
-        title: `Sale: ${sale.product?.name || 'Product'} x${sale.quantity || 0}`,
-        time: formatTime(sale.createdAt || sale.saleDate),
-        amount: `+KES ${((sale.sellingPrice || 0) * (sale.quantity || 0)).toLocaleString()}`,
-        type: 'sale'
-      }));
+      const activitiesList = [];
+      
+      salesData.slice(0, 5).forEach(sale => {
+        if (sale.items && sale.items.length > 0) {
+          const firstItem = sale.items[0];
+          const itemCount = sale.items.length;
+          const productName = firstItem?.productName || 'Product';
+          const quantity = firstItem?.quantity || 0;
+          const unitLabel = firstItem?.unitSold?.label || '';
+          
+          activitiesList.push({
+            title: `Sale: ${productName} x${quantity}${unitLabel ? ' ' + unitLabel : ''}${itemCount > 1 ? ` +${itemCount - 1} more` : ''}`,
+            time: formatTime(sale.saleDate || sale.createdAt),
+            amount: `+KES ${(sale.total || 0).toLocaleString()}`,
+            type: 'sale',
+            invoiceNumber: sale.invoiceNumber
+          });
+        } else {
+          activitiesList.push({
+            title: `Sale: ${sale.product?.name || 'Product'} x${sale.quantity || 0}`,
+            time: formatTime(sale.createdAt || sale.saleDate),
+            amount: `+KES ${((sale.sellingPrice || 0) * (sale.quantity || 0)).toLocaleString()}`,
+            type: 'sale'
+          });
+        }
+      });
 
-      // Add low stock alerts to activities
       lowStockData.slice(0, 3).forEach(product => {
+        const baseUnitLabel = product.baseUnit?.label || 'units';
+        const stockAmount = product.totalStock || 0;
         activitiesList.push({
-          title: `⚠️ Low Stock: ${product.name}`,
+          title: `Low Stock: ${product.name}`,
           time: 'Now',
-          amount: `${product.quantity} left`,
+          amount: `${stockAmount} ${baseUnitLabel} left`,
           type: 'alert'
         });
       });
 
-      // Sort activities
+      if (dashboardStatsData.outOfStockCount > 0) {
+        activitiesList.push({
+          title: `${dashboardStatsData.outOfStockCount} products out of stock`,
+          time: 'Now',
+          amount: 'Restock needed',
+          type: 'alert'
+        });
+      }
+
       activitiesList.sort((a, b) => {
         if (a.time === 'Now') return -1;
         if (b.time === 'Now') return 1;
@@ -193,11 +213,11 @@ export default function Dashboard() {
     { label: 'Profit', value: statsData.profit, change: statsChanges.profit.change, positive: statsChanges.profit.positive },
   ];
 
-  // New stats (3 summary stats)
+  // Summary stats (3 cards)
   const summaryStats = [
-    { label: 'Inventory Value', value: statsData.inventoryValue, icon: faStore },
-    { label: 'Weekly Sales', value: statsData.weeklySales, icon: faChartBar },
-    { label: 'Weekly Profit', value: statsData.weeklyGrossProfit, icon: faCoins },
+    { label: 'Inventory Value', value: statsData.inventoryValue, icon: Store },
+    { label: 'Weekly Sales', value: statsData.weeklySales, icon: ChartBar },
+    { label: 'Weekly Profit', value: statsData.weeklyGrossProfit, icon: Coins },
   ];
 
   if (loading) {
@@ -212,7 +232,7 @@ export default function Dashboard() {
               <div className="stat-card" key={i}>
                 <div className="stat-header">
                   <div className="stat-icon">
-                    <FontAwesomeIcon icon={faSpinner} spin />
+                    <LoaderCircle className="spin" size={20} />
                   </div>
                 </div>
                 <div className="stat-value">---</div>
@@ -229,7 +249,9 @@ export default function Dashboard() {
     return (
       <div className="dashboard">
         <div className="header">
-
+          <div className="header-top">
+            <div className="dashboard-title">Dashboard</div>
+          </div>
         </div>
         <div className="section" style={{ textAlign: 'center', padding: '40px 20px' }}>
           <p style={{ color: '#C0392B' }}>{error}</p>
@@ -265,9 +287,9 @@ export default function Dashboard() {
               <div className="stat-header">
                 <div className="stat-icon">
                   {stat.positive ? (
-                    <FontAwesomeIcon icon={faArrowUp} />
+                    <ArrowUp size={16} />
                   ) : (
-                    <FontAwesomeIcon icon={faArrowDown} />
+                    <ArrowDown size={16} />
                   )}
                 </div>
                 <span className={`stat-change ${stat.positive ? 'positive' : 'negative'}`}>
@@ -280,19 +302,22 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Summary Stats - 3 new stats as a compact row */}
+        {/* Summary Stats - 3 cards */}
         <div className="summary-stats-row">
-          {summaryStats.map((stat, i) => (
-            <div className="summary-stat-item" key={i}>
-              <div className="summary-stat-icon">
-                <FontAwesomeIcon icon={stat.icon} />
+          {summaryStats.map((stat, i) => {
+            const Icon = stat.icon;
+            return (
+              <div className="summary-stat-item" key={i}>
+                <div className="summary-stat-icon">
+                  <Icon size={20} />
+                </div>
+                <div className="summary-stat-content">
+                  <div className="summary-stat-value">{stat.value}</div>
+                  <div className="summary-stat-label">{stat.label}</div>
+                </div>
               </div>
-              <div className="summary-stat-content">
-                <div className="summary-stat-value">{stat.value}</div>
-                <div className="summary-stat-label">{stat.label}</div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -303,18 +328,21 @@ export default function Dashboard() {
           <button className="see-all" onClick={() => navigate('/products')}>See All</button>
         </div>
         <div className="actions-grid">
-          {quickActions.map((action) => (
-            <div 
-              className="action-card" 
-              key={action.id}
-              onClick={() => navigate(action.path)}
-            >
-              <div className="action-icon">
-                <FontAwesomeIcon icon={action.icon} />
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <div 
+                className="action-card" 
+                key={action.id}
+                onClick={() => navigate(action.path)}
+              >
+                <div className="action-icon">
+                  <Icon size={24} />
+                </div>
+                <span>{action.title}</span>
               </div>
-              <span>{action.title}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -336,7 +364,16 @@ export default function Dashboard() {
           </div>
         ) : (
           activities.map((item, i) => (
-            <div className="activity-item" key={i}>
+            <div 
+              className="activity-item" 
+              key={i}
+              onClick={() => {
+                if (item.invoiceNumber) {
+                  navigate(`/sales/${item.invoiceNumber}`);
+                }
+              }}
+              style={{ cursor: item.invoiceNumber ? 'pointer' : 'default' }}
+            >
               <div className="activity-left">
                 <div className={`activity-dot ${item.type === 'alert' ? 'alert' : ''}`}></div>
                 <div>

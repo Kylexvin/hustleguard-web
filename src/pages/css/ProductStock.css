@@ -1,0 +1,585 @@
+/* src/css/ProductStock.css */
+
+.product-stock-container {
+  background: #F5F7F6;
+  min-height: 100vh;
+  padding-bottom: 30px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.product-stock-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #FFF;
+  border-bottom: 1px solid #E8ECF0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.product-stock-back {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #1A1A2E;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.product-stock-back:hover {
+  color: #1B4D3D;
+}
+
+.product-stock-title {
+  flex: 1;
+  padding: 0 16px;
+}
+
+.product-stock-title h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin: 0;
+}
+
+.product-stock-subtitle {
+  font-size: 13px;
+  color: #7F8C8D;
+}
+
+.product-stock-add-btn {
+  padding: 8px 16px;
+  background: #1B4D3D;
+  color: #FFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.product-stock-add-btn:hover {
+  background: #2D6B55;
+}
+
+/* ============================================================
+   SUMMARY CARDS
+   ============================================================ */
+.product-stock-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 16px 20px;
+}
+
+.stock-summary-card {
+  background: #FFF;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid #E8ECF0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.stock-summary-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #E8F1EC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1B4D3D;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.stock-summary-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stock-summary-label {
+  font-size: 12px;
+  color: #7F8C8D;
+  font-weight: 500;
+}
+
+.stock-summary-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1A1A2E;
+}
+
+/* ============================================================
+   SECTIONS
+   ============================================================ */
+.product-stock-section {
+  background: #FFF;
+  border-radius: 12px;
+  margin: 0 20px 16px 20px;
+  padding: 16px 20px;
+  border: 1px solid #E8ECF0;
+}
+
+.product-stock-section h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin: 0 0 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.product-stock-section h3 svg {
+  color: #1B4D3D;
+}
+
+/* ============================================================
+   STOCK BY UNIT GRID
+   ============================================================ */
+.stock-unit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.stock-unit-card {
+  border: 1px solid #E8ECF0;
+  border-radius: 10px;
+  padding: 14px;
+  background: #FAFBFC;
+}
+
+.stock-unit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.stock-unit-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.stock-unit-conversion {
+  font-size: 11px;
+  color: #7F8C8D;
+  background: #F0F2F1;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.stock-unit-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.stock-unit-quantity {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.stock-unit-qty {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1B4D3D;
+}
+
+.stock-unit-label {
+  font-size: 13px;
+  color: #7F8C8D;
+}
+
+.stock-unit-base {
+  font-size: 12px;
+  color: #95A5A6;
+}
+
+.stock-unit-batches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #E8ECF0;
+}
+
+.stock-batch-mini {
+  font-size: 11px;
+  background: #F0F2F1;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #1A1A2E;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.batch-number {
+  font-size: 9px;
+  color: #95A5A6;
+}
+
+/* ============================================================
+   BATCH TABLE
+   ============================================================ */
+.stock-batch-list {
+  overflow-x: auto;
+}
+
+.stock-batch-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.stock-batch-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: #F5F7F6;
+  font-weight: 600;
+  color: #1A1A2E;
+  border-bottom: 2px solid #E8ECF0;
+}
+
+.stock-batch-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #E8ECF0;
+  color: #1A1A2E;
+}
+
+.stock-batch-table tr:hover td {
+  background: #F8FAFB;
+}
+
+.batch-delete-btn {
+  background: none;
+  border: none;
+  color: #95A5A6;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.batch-delete-btn:hover {
+  background: #FDE8E8;
+  color: #dc3545;
+}
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+.stock-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #95A5A6;
+}
+
+.stock-empty p {
+  font-size: 16px;
+  font-weight: 500;
+  color: #7F8C8D;
+  margin: 0 0 4px 0;
+}
+
+.stock-empty span {
+  font-size: 13px;
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+.product-stock-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.product-stock-modal-content {
+  background: #FFF;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.product-stock-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.product-stock-modal-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.product-stock-modal-header h3 svg {
+  color: #1B4D3D;
+}
+
+.product-stock-modal-header button {
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: #95A5A6;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.product-stock-modal-header button:hover {
+  color: #dc3545;
+}
+
+/* Form in modal */
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-group {
+  flex: 1;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 4px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid #E8ECF0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #FAFBFC;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #1B4D3D;
+  box-shadow: 0 0 0 3px rgba(27, 77, 61, 0.1);
+}
+
+.convert-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #F8FAFB;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #7F8C8D;
+}
+
+.convert-info svg {
+  color: #1B4D3D;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.form-actions button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.form-actions button:first-child {
+  background: #F5F7F6;
+  color: #1A1A2E;
+}
+
+.form-actions button:first-child:hover {
+  background: #E8ECF0;
+}
+
+.form-actions button:last-child {
+  background: #1B4D3D;
+  color: #FFF;
+}
+
+.form-actions button:last-child:hover:not(:disabled) {
+  background: #2D6B55;
+}
+
+.form-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   LOADING & ERROR
+   ============================================================ */
+.product-stock-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 14px;
+  color: #7F8C8D;
+}
+
+.product-stock-loading svg {
+  font-size: 36px;
+  color: #1B4D3D;
+}
+
+.product-stock-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 12px;
+}
+
+.product-stock-error p {
+  font-size: 16px;
+  color: #7F8C8D;
+  margin: 0;
+}
+
+.product-stock-error button {
+  padding: 8px 24px;
+  background: #1B4D3D;
+  color: #FFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .product-stock-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stock-unit-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .product-stock-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .product-stock-title {
+    order: 2;
+    flex: 1 1 100%;
+    padding: 0;
+  }
+
+  .product-stock-add-btn {
+    order: 3;
+  }
+
+  .stock-batch-table {
+    font-size: 12px;
+  }
+
+  .stock-batch-table th,
+  .stock-batch-table td {
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-stock-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-unit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .product-stock-section {
+    margin: 0 12px 12px 12px;
+    padding: 12px 14px;
+  }
+
+  .product-stock-modal-content {
+    padding: 16px;
+    margin: 10px;
+  }
+
+  .product-stock-header {
+    padding: 12px 16px;
+  }
+
+  .product-stock-title h2 {
+    font-size: 16px;
+  }
+
+  .stock-summary-value {
+    font-size: 18px;
+  }
+}

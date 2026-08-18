@@ -1,21 +1,23 @@
 // src/pages/Pos.jsx
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faSearch, 
-  faPlus, 
-  faMinus, 
-  faTrash, 
-  faCreditCard, 
-  faTimes,
-  faShoppingCart,
-  faQrcode,
-  faMicrophone,
-  faMicrophoneSlash,
-  faVolumeUp,
-  faSpinner,
-  faExclamationTriangle
-} from '@fortawesome/free-solid-svg-icons';
+import {
+  Search,
+  Plus,
+  Minus,
+  Trash2,
+  CreditCard,
+  X,
+  ShoppingCart,
+  QrCode,
+  Mic,
+  MicOff,
+  Volume2,
+  LoaderCircle,
+  TriangleAlert,
+  Package,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -25,6 +27,7 @@ export default function Pos() {
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState('');
   const [customer, setCustomer] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [isListening, setIsListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState('idle');
@@ -36,92 +39,182 @@ export default function Pos() {
   const [processingCheckout, setProcessingCheckout] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState('');
   const [barcodeError, setBarcodeError] = useState(null);
-  
+  const [expandedProducts, setExpandedProducts] = useState({});
+
   const recognitionRef = useRef(null);
   const timeoutRef = useRef(null);
   const searchTimeoutRef = useRef(null);
   const cartRef = useRef(cart);
+  const initialLoadDone = useRef(false);
 
   // Keep cartRef in sync with cart state
   useEffect(() => {
     cartRef.current = cart;
   }, [cart]);
 
-  // Add to cart
-  const addToCart = useCallback((product) => {
-    const currentCart = cartRef.current;
-    const existing = currentCart.find(item => item.id === product.id);
-
-    if (existing) {
-      if (existing.quantity >= product.stock) {
-        toast.error('Not enough stock available');
-        return;
-      }
-      setCart(prev => prev.map(item =>
-        item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-      ));
-      toast.success(`Added another ${product.name}`);
-    } else {
-      if (product.stock === 0) {
-        toast.error('Product out of stock');
-        return;
-      }
-      setCart(prev => [...prev, { ...product, quantity: 1 }]);
-      toast.success(`${product.name} added to cart`);
+  // ============================================================
+  // UOM: Get best sell unit for a product
+  // ============================================================
+  const getBestSellUnit = useCallback((product) => {
+    if (!product.sellUnits || product.sellUnits.length === 0) {
+      return {
+        name: product.baseUnit?.name || 'unit',
+        label: product.baseUnit?.label || 'Unit',
+        conversion: 1,
+        sellPrice: product.price || 0,
+        isBase: true
+      };
     }
+    // Return first active sell unit (prefer base unit if available)
+    const baseUnit = product.sellUnits.find(u => u.isBase);
+    return baseUnit || product.sellUnits[0];
   }, []);
 
+  // ============================================================
+  // Add to cart with UOM support
+  // ============================================================
+  const addToCart = useCallback((product, unitName = null, quantity = 1) => {
+    // Find the product
+    const productData = products.find(p => p.productId === product.productId);
+    if (!productData) {
+      toast.error('Product not found');
+      return;
+    }
+
+    // Find the unit
+    let unit;
+    if (unitName) {
+      unit = productData.sellUnits?.find(u => u.name === unitName && u.isActive !== false);
+    }
+    if (!unit) {
+      unit = getBestSellUnit(productData);
+    }
+
+    if (!unit) {
+      toast.error('No sell unit available for this product');
+      return;
+    }
+
+    // Check stock availability
+    const availableInUnit = productData.totalStock / unit.conversion;
+    const currentCart = cartRef.current;
+    const existing = currentCart.find(item => 
+      item.productId === product.productId && item.unitName === unit.name
+    );
+
+    const currentQty = existing ? existing.quantity : 0;
+    const requestedQty = currentQty + quantity;
+
+    if (requestedQty > availableInUnit) {
+      toast.error(`Only ${Math.floor(availableInUnit)} ${unit.label} available`);
+      return;
+    }
+
+    const unitPrice = unit.sellPrice || product.price || 0;
+
+    if (existing) {
+      setCart(prev => prev.map(item =>
+        item.productId === product.productId && item.unitName === unit.name
+          ? { ...item, quantity: item.quantity + quantity }
+          : item
+      ));
+      toast.success(`Added ${quantity} more ${unit.label} of ${productData.productName}`);
+    } else {
+      setCart(prev => [...prev, {
+        productId: productData.productId,
+        productName: productData.productName,
+        baseUnit: productData.baseUnit,
+        unitName: unit.name,
+        unitLabel: unit.label,
+        conversion: unit.conversion,
+        quantity: quantity,
+        price: unitPrice,
+        totalPrice: unitPrice * quantity,
+        quantityInBase: quantity * unit.conversion,
+        availableStock: productData.totalStock,
+        maxQuantity: Math.floor(availableInUnit)
+      }]);
+      toast.success(`${productData.productName} (${unit.label}) added to cart`);
+    }
+  }, [products, getBestSellUnit]);
+
+  // ============================================================
   // Remove from cart
-  const removeFromCart = useCallback((id) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== id));
+  // ============================================================
+  const removeFromCart = useCallback((productId, unitName) => {
+    setCart(prevCart => prevCart.filter(item => 
+      !(item.productId === productId && item.unitName === unitName)
+    ));
     toast.success('Item removed');
   }, []);
 
+  // ============================================================
   // Update quantity
-  const updateQuantity = useCallback((id, change) => {
+  // ============================================================
+  const updateQuantity = useCallback((productId, unitName, change) => {
     const currentCart = cartRef.current;
-    const item = currentCart.find(i => i.id === id);
+    const item = currentCart.find(i => i.productId === productId && i.unitName === unitName);
     
     if (!item) return;
     
     const newQty = item.quantity + change;
-    if (newQty > item.stock) {
-      toast.error('Not enough stock');
+    if (newQty > item.maxQuantity) {
+      toast.error(`Only ${item.maxQuantity} ${item.unitLabel} available`);
       return;
     }
     if (newQty <= 0) {
-      setCart(prev => prev.filter(i => i.id !== id));
-      toast.success('Item removed');
+      removeFromCart(productId, unitName);
       return;
     }
     
     setCart(prev => prev.map(i =>
-      i.id === id ? { ...i, quantity: newQty } : i
+      i.productId === productId && i.unitName === unitName
+        ? { 
+            ...i, 
+            quantity: newQty, 
+            totalPrice: newQty * i.price,
+            quantityInBase: newQty * i.conversion
+          }
+        : i
     ));
-  }, []);
+  }, [removeFromCart]);
 
-  // Load initial products
+  // ============================================================
+  // Load initial products (with UOM and stock)
+  // ============================================================
   const loadInitialProducts = useCallback(async () => {
+    if (initialLoadDone.current) return;
+    
     try {
       setLoadingInitial(true);
       setError(null);
       const response = await axios.get('/products');
-      
+
       if (response.data.success) {
-        const posProducts = response.data.data.map(product => ({
-          _id: product._id,
-          name: product.name,
-          sellingPrice: product.sellingPrice,
-          quantity: product.quantity,
-          barcode: product.barcode,
-          category: product.category,
-          unit: product.unit,
-          minStockAlert: product.minStockAlert,
-          buyingPrice: product.buyingPrice,
-          isLowStock: product.quantity <= product.minStockAlert,
-          isOutOfStock: product.quantity === 0
-        }));
+        const posProducts = response.data.data.map(product => {
+          const stock = product.totalStock || 0;
+          
+          return {
+            productId: product._id,
+            productName: product.name,
+            description: product.description,
+            category: product.category,
+            baseUnit: product.baseUnit || { name: 'unit', label: 'Unit' },
+            sellUnits: product.sellUnits || [],
+            stockUnits: product.stockUnits || [],
+            totalStock: stock,
+            minStockAlert: product.minStockAlert || 5,
+            isLowStock: stock > 0 && stock <= (product.minStockAlert || 5),
+            isOutOfStock: stock <= 0,
+            price: product.sellingPrice || 0,
+            original: product
+          };
+        });
         setProducts(posProducts);
+        initialLoadDone.current = true;
+      } else {
+        setError('Failed to load products. Please refresh.');
+        toast.error('Failed to load products');
       }
     } catch (err) {
       console.error('Error loading products:', err);
@@ -132,7 +225,9 @@ export default function Pos() {
     }
   }, []);
 
-  // Search products
+  // ============================================================
+  // Search products (with UOM)
+  // ============================================================
   const searchProducts = useCallback(async (query) => {
     if (!query || query.trim() === '') {
       loadInitialProducts();
@@ -146,21 +241,45 @@ export default function Pos() {
         params: {
           query: query.trim(),
           limit: 50,
-          includeOutOfStock: false
+          includeOutOfStock: false,
+          includeUnits: true
         }
       });
       
       if (response.data.success) {
-        setProducts(response.data.data);
+        const searchResults = response.data.data.map(product => ({
+          productId: product._id,
+          productName: product.name,
+          description: product.description,
+          category: product.category,
+          baseUnit: product.baseUnit || { name: 'unit', label: 'Unit' },
+          sellUnits: product.sellUnits || [],
+          stockUnits: product.stockUnits || [],
+          totalStock: product.totalStock || 0,
+          minStockAlert: product.minStockAlert || 5,
+          isLowStock: product.isLowStock || false,
+          isOutOfStock: product.isOutOfStock || false,
+          price: product.sellUnits?.[0]?.sellPrice || 0,
+          original: product
+        }));
+        setProducts(searchResults);
       }
     } catch (err) {
       console.error('Error searching products:', err);
-      setError('Failed to search products. Please try again.');
-      toast.error('Failed to search products');
+      // Local fallback
+      const localResults = products.filter(p => 
+        p.productName.toLowerCase().includes(query.toLowerCase())
+      );
+      if (localResults.length > 0) {
+        setProducts(localResults);
+      } else {
+        setError('Failed to search products.');
+        toast.error('Failed to search products');
+      }
     } finally {
       setSearching(false);
     }
-  }, [loadInitialProducts]);
+  }, [loadInitialProducts, products]);
 
   // Load products on mount
   useEffect(() => {
@@ -169,35 +288,40 @@ export default function Pos() {
 
   // Debounced search
   useEffect(() => {
-    clearTimeout(searchTimeoutRef.current);
     if (search.trim()) {
+      clearTimeout(searchTimeoutRef.current);
       searchTimeoutRef.current = setTimeout(() => {
         searchProducts(search);
       }, 300);
-    } else {
-      loadInitialProducts();
     }
     return () => clearTimeout(searchTimeoutRef.current);
-  }, [search, searchProducts, loadInitialProducts]);
+  }, [search, searchProducts]);
 
-  // Get product by barcode
+  // ============================================================
+  // Handle barcode scan (searches across all units)
+  // ============================================================
   const handleBarcodeScan = useCallback(async (barcode) => {
     if (!barcode || barcode.trim() === '') return;
 
     try {
       setBarcodeError(null);
       const response = await axios.get(`/pos/products/barcode/${barcode.trim()}`);
-      
+
       if (response.data.success) {
         const product = response.data.data;
+        const stock = product.totalStock || 0;
+        
+        // Find which unit was scanned
+        const scannedUnit = product.matchedUnit || getBestSellUnit(product);
+        
         addToCart({
-          id: product._id,
-          name: product.name,
-          price: product.sellingPrice,
-          stock: product.quantity,
-          barcode: product.barcode,
-          buyingPrice: product.buyingPrice || (product.sellingPrice * 0.7)
-        });
+          productId: product._id,
+          productName: product.name,
+          baseUnit: product.baseUnit,
+          sellUnits: product.sellUnits,
+          totalStock: stock
+        }, scannedUnit?.name, 1);
+        
         setBarcodeInput('');
       }
     } catch (err) {
@@ -206,27 +330,57 @@ export default function Pos() {
       toast.error('Product not found');
       setTimeout(() => setBarcodeError(null), 3000);
     }
-  }, [addToCart]);
+  }, [addToCart, getBestSellUnit]);
 
-  // Handle checkout - NO VAT
+  // ============================================================
+  // Get product unit availability (for checkout validation)
+  // ============================================================
+  const checkUnitAvailability = useCallback(async (productId, unitName, quantity) => {
+    try {
+      const response = await axios.get(`/pos/products/${productId}/check-unit/${unitName}`, {
+        params: { quantity }
+      });
+      return response.data.data;
+    } catch (err) {
+      return { isAvailable: false, error: err.response?.data?.message || 'Check failed' };
+    }
+  }, []);
+
+  // ============================================================
+  // Handle checkout (multi-item with UOM)
+  // ============================================================
   const handleCheckout = useCallback(async () => {
     if (cart.length === 0) {
       toast.error('Cart is empty');
       return;
     }
 
-    // Calculate total (NO VAT)
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const total = cart.reduce((sum, item) => sum + item.totalPrice, 0);
+    const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-    // Confirm with SweetAlert
+    // Build sale items
+    const saleItems = cart.map(item => ({
+      productId: item.productId,
+      unitName: item.unitName,
+      quantity: item.quantity
+    }));
+
     const result = await Swal.fire({
       title: 'Confirm Sale',
       html: `
-        <div style="text-align: left;">
-          <p><strong>Items:</strong> ${cart.length}</p>
+        <div style="text-align: left; max-height: 300px; overflow-y: auto;">
+          <p><strong>Items:</strong> ${cart.length} products</p>
+          <p><strong>Total Units:</strong> ${itemCount}</p>
           <p><strong>Total:</strong> KES ${total.toFixed(2)}</p>
           <p><strong>Customer:</strong> ${customer || 'Walk-in'}</p>
           <p><strong>Payment:</strong> ${paymentMethod}</p>
+          <hr style="margin: 10px 0;" />
+          ${cart.map(item => `
+            <div style="display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0;">
+              <span>${item.productName} (${item.unitLabel}) × ${item.quantity}</span>
+              <span>KES ${item.totalPrice.toFixed(2)}</span>
+            </div>
+          `).join('')}
         </div>
       `,
       icon: 'question',
@@ -242,33 +396,29 @@ export default function Pos() {
     try {
       setProcessingCheckout(true);
       
-      // Create sale for each item in cart
-      const salePromises = cart.map(async (item) => {
-        const saleData = {
-          productId: item.id,
-          quantity: item.quantity,
-          sellingPrice: item.price,
-          customer: customer || 'Walk-in Customer',
-          paymentMethod: paymentMethod,
-          notes: `POS Sale - ${new Date().toLocaleString()}`
-        };
+      const saleData = {
+        items: saleItems,
+        customer: customer || 'Walk-in Customer',
+        customerPhone: customerPhone || '',
+        paymentMethod: paymentMethod,
+        paymentStatus: 'paid',
+        amountPaid: total,
+        notes: `POS Sale - ${new Date().toLocaleString()}`
+      };
 
-        console.log('Sending sale data:', saleData);
-        const response = await axios.post('/sales', saleData);
-        return response.data;
-      });
-
-      await Promise.all(salePromises);
+      const response = await axios.post('/sales', saleData);
       
       toast.success(`Sale complete! Total: KES ${total.toFixed(2)}`);
       
       await Swal.fire({
-        title: 'Sale Complete!',
+        title: 'Sale Complete! 🎉',
         html: `
           <div style="text-align: left;">
+            <p><strong>Invoice:</strong> ${response.data.data?.invoiceNumber || 'N/A'}</p>
             <p><strong>Total:</strong> KES ${total.toFixed(2)}</p>
-            <p><strong>Items:</strong> ${cart.length}</p>
+            <p><strong>Items:</strong> ${cart.length} products (${itemCount} units)</p>
             <p><strong>Customer:</strong> ${customer || 'Walk-in'}</p>
+            <p><strong>Payment:</strong> ${paymentMethod}</p>
           </div>
         `,
         icon: 'success',
@@ -277,6 +427,11 @@ export default function Pos() {
       
       setCart([]);
       setCustomer('');
+      setCustomerPhone('');
+      
+      // Reload products to update stock
+      initialLoadDone.current = false;
+      loadInitialProducts();
       
     } catch (err) {
       console.error('Error processing sale:', err);
@@ -292,12 +447,25 @@ export default function Pos() {
     } finally {
       setProcessingCheckout(false);
     }
-  }, [cart, customer, paymentMethod]);
+  }, [cart, customer, customerPhone, paymentMethod, loadInitialProducts]);
 
-  // Voice command processing
+  // ============================================================
+  // Toggle product units expand
+  // ============================================================
+  const toggleProductExpand = (productId) => {
+    setExpandedProducts(prev => ({
+      ...prev,
+      [productId]: !prev[productId]
+    }));
+  };
+
+  // ============================================================
+  // Voice command processing (updated with UOM)
+  // ============================================================
   const processVoiceCommand = useCallback((transcript) => {
     const lower = transcript.toLowerCase().trim();
     
+    // Clear cart
     if (lower.includes('clear cart') || lower.includes('empty cart') || lower.includes('remove all')) {
       setCart([]);
       setVoiceStatus('confirmed');
@@ -306,6 +474,7 @@ export default function Pos() {
       return;
     }
 
+    // Checkout
     if (lower.includes('checkout') || lower.includes('pay now') || lower.includes('complete sale')) {
       if (cart.length > 0) {
         handleCheckout();
@@ -315,23 +484,21 @@ export default function Pos() {
       return;
     }
 
+    // Remove
     if (lower.includes('remove') || lower.includes('delete')) {
-      const match = products.find(p => lower.includes(p.name.toLowerCase()));
+      const match = products.find(p => lower.includes(p.productName.toLowerCase()));
       if (match) {
-        const existing = cart.find(item => item.id === match._id);
+        const existing = cart.find(item => item.productId === match.productId);
         if (existing) {
-          if (existing.quantity > 1) {
-            updateQuantity(match._id, -1);
-          } else {
-            removeFromCart(match._id);
-          }
+          removeFromCart(match.productId, existing.unitName);
         } else {
-          toast.error(`${match.name} not in cart`);
+          toast.error(`${match.productName} not in cart`);
         }
       }
       return;
     }
 
+    // Add product with quantity
     const words = lower.split(' ');
     let quantity = 1;
     let productName = '';
@@ -350,7 +517,7 @@ export default function Pos() {
       isNaN(w) && 
       !['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 
         'add', 'please', 'need', 'want', 'get', 'would', 'like', 'can', 'could', 'have', 
-        'of', 'and', 'the', 'a', 'an'].includes(w)
+        'of', 'and', 'the', 'a', 'an', 'some', 'more'].includes(w)
     );
     productName = cleanWords.join(' ');
 
@@ -358,7 +525,7 @@ export default function Pos() {
     let matchedScore = 0;
 
     products.forEach(p => {
-      const pLower = p.name.toLowerCase();
+      const pLower = p.productName.toLowerCase();
       const score = productName.split(' ').filter(word => 
         pLower.includes(word) || word.includes(pLower)
       ).length;
@@ -370,22 +537,17 @@ export default function Pos() {
     });
 
     if (matchedProduct && matchedScore > 0) {
-      if (matchedProduct.quantity < quantity) {
-        toast.error(`Only ${matchedProduct.quantity} in stock`);
-        quantity = matchedProduct.quantity;
+      const bestUnit = getBestSellUnit(matchedProduct);
+      const availableInUnit = matchedProduct.totalStock / bestUnit.conversion;
+      
+      if (availableInUnit < quantity) {
+        toast.error(`Only ${Math.floor(availableInUnit)} ${bestUnit.label} available`);
+        quantity = Math.floor(availableInUnit);
       }
       
       if (quantity > 0) {
-        addToCart({
-          id: matchedProduct._id,
-          name: matchedProduct.name,
-          price: matchedProduct.sellingPrice,
-          stock: matchedProduct.quantity,
-          buyingPrice: matchedProduct.buyingPrice
-        });
-        
+        addToCart(matchedProduct, bestUnit.name, quantity);
         setVoiceStatus('confirmed');
-        
         setTimeout(() => {
           setVoiceStatus('idle');
           setVoiceTranscript('');
@@ -395,7 +557,7 @@ export default function Pos() {
       toast.error(`Couldn't find ${productName}`);
       setVoiceStatus('idle');
     }
-  }, [cart, products, handleCheckout, updateQuantity, removeFromCart, addToCart]);
+  }, [products, cart, handleCheckout, removeFromCart, addToCart, getBestSellUnit]);
 
   // Speech recognition setup
   useEffect(() => {
@@ -434,9 +596,7 @@ export default function Pos() {
         if (isListening) {
           try {
             recognitionRef.current.start();
-          } catch (e) {
-            // Ignore
-          }
+          } catch (e) {}
         }
       };
     }
@@ -475,18 +635,18 @@ export default function Pos() {
           } catch (err) {}
         }
       }
-      toast.success('Listening...');
+      toast.success('Listening... Speak product name');
     }
   };
 
-  // Handle barcode input
+  // Handle barcode submit
   const handleBarcodeSubmit = (e) => {
     e.preventDefault();
     handleBarcodeScan(barcodeInput);
   };
 
-  // Calculate totals (NO VAT)
-  const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  // Calculate totals
+  const total = cart.reduce((sum, item) => sum + item.totalPrice, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const voiceCommands = [
@@ -497,6 +657,9 @@ export default function Pos() {
     'Checkout'
   ];
 
+  // ============================================================
+  // Render
+  // ============================================================
   return (
     <>
       <Toaster 
@@ -541,10 +704,10 @@ export default function Pos() {
 
           {/* Search & Barcode */}
           <div className="pos-search">
-            <FontAwesomeIcon icon={faSearch} className="pos-search-icon" />
+            <Search className="pos-search-icon" size={18} />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Search products by name, barcode..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               autoFocus
@@ -564,7 +727,7 @@ export default function Pos() {
               title="Scan barcode"
               onClick={() => document.getElementById('barcode-scanner')?.focus()}
             >
-              <FontAwesomeIcon icon={faQrcode} />
+              <QrCode size={18} />
             </button>
             
             <button 
@@ -572,13 +735,13 @@ export default function Pos() {
               onClick={toggleListening}
               title={isListening ? 'Stop listening' : 'Start voice ordering'}
             >
-              <FontAwesomeIcon icon={isListening ? faMicrophoneSlash : faMicrophone} />
+              {isListening ? <MicOff size={18} /> : <Mic size={18} />}
               {isListening && <span className="pos-voice-pulse"></span>}
             </button>
             
             {search && (
               <button className="pos-search-clear" onClick={() => setSearch('')}>
-                <FontAwesomeIcon icon={faTimes} />
+                <X size={16} />
               </button>
             )}
           </div>
@@ -586,7 +749,7 @@ export default function Pos() {
           {/* Barcode error */}
           {barcodeError && (
             <div className="pos-barcode-error">
-              <FontAwesomeIcon icon={faExclamationTriangle} />
+              <TriangleAlert size={16} />
               <span>{barcodeError}</span>
             </div>
           )}
@@ -604,7 +767,7 @@ export default function Pos() {
               </div>
               {voiceTranscript && (
                 <div className="pos-voice-transcript">
-                  <FontAwesomeIcon icon={faVolumeUp} />
+                  <Volume2 size={14} />
                   <span>"{voiceTranscript}"</span>
                 </div>
               )}
@@ -614,7 +777,7 @@ export default function Pos() {
           {/* Voice Help */}
           {!isListening && (
             <div className="pos-voice-help">
-              <FontAwesomeIcon icon={faMicrophone} />
+              <Mic size={14} />
               <span>Click mic to order by voice</span>
               <button className="pos-voice-help-toggle" onClick={() => {
                 Swal.fire({
@@ -636,17 +799,17 @@ export default function Pos() {
           {/* Loading/Error States */}
           {loadingInitial ? (
             <div className="pos-loading">
-              <FontAwesomeIcon icon={faSpinner} spin />
+              <LoaderCircle className="spin" size={24} />
               <span>Loading products...</span>
             </div>
           ) : searching ? (
             <div className="pos-loading">
-              <FontAwesomeIcon icon={faSpinner} spin />
+              <LoaderCircle className="spin" size={24} />
               <span>Searching...</span>
             </div>
           ) : error ? (
             <div className="pos-error">
-              <FontAwesomeIcon icon={faExclamationTriangle} />
+              <TriangleAlert size={20} />
               <span>{error}</span>
               <button onClick={() => setError(null)}>Dismiss</button>
             </div>
@@ -660,35 +823,85 @@ export default function Pos() {
                 <span>Add products from the Products page</span>
               </div>
             )}
-            {products.map((product) => (
-              <div key={product._id} className="pos-product-card">
-                <div className="pos-product-info">
-                  <h4>{product.name}</h4>
-                  <div className="pos-product-meta">
-                    <span className="pos-product-price">KES {product.sellingPrice}</span>
-                    <span className={`pos-product-stock ${product.isLowStock ? 'low' : ''} ${product.isOutOfStock ? 'out' : ''}`}>
-                      {product.quantity} left
-                    </span>
-                    {product.isLowStock && !product.isOutOfStock && (
-                      <span className="pos-stock-warning">Low</span>
+            {products.map((product) => {
+              const bestUnit = getBestSellUnit(product);
+              const isExpanded = expandedProducts[product.productId];
+              const hasMultipleUnits = product.sellUnits && product.sellUnits.length > 1;
+              
+              return (
+                <div key={product.productId} className="pos-product-card">
+                  <div className="pos-product-info">
+                    <h4>{product.productName}</h4>
+                    <div className="pos-product-meta">
+                      <span className="pos-product-price">
+                        KES {bestUnit?.sellPrice || product.price || 0}
+                      </span>
+                      <span className={`pos-product-stock ${product.isLowStock ? 'low' : ''} ${product.isOutOfStock ? 'out' : ''}`}>
+                        {product.totalStock} {product.baseUnit?.label || 'units'} left
+                      </span>
+                      {product.isLowStock && !product.isOutOfStock && (
+                        <span className="pos-stock-warning">Low</span>
+                      )}
+                    </div>
+                    {product.sellUnits && product.sellUnits.length > 0 && (
+                      <div className="pos-product-units">
+                        <span className="pos-unit-label">
+                          {bestUnit?.label || 'Unit'}
+                          {hasMultipleUnits && (
+                            <button 
+                              className="pos-unit-toggle"
+                              onClick={() => toggleProductExpand(product.productId)}
+                            >
+                              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                              <span className="pos-unit-count">
+                                +{product.sellUnits.length - 1} more
+                              </span>
+                            </button>
+                          )}
+                        </span>
+                      </div>
+                    )}
+                    {isExpanded && hasMultipleUnits && (
+                      <div className="pos-unit-list">
+                        {product.sellUnits.filter(u => !u.isBase).map(unit => (
+                          <button
+                            key={unit.name}
+                            className="pos-unit-btn"
+                            onClick={() => {
+                              const availableInUnit = product.totalStock / unit.conversion;
+                              if (availableInUnit < 1) {
+                                toast.error(`Only ${Math.floor(availableInUnit)} ${unit.label} available`);
+                                return;
+                              }
+                              addToCart(product, unit.name, 1);
+                            }}
+                            disabled={product.totalStock / unit.conversion < 1}
+                          >
+                            {unit.label}
+                            <span className="pos-unit-price">KES {unit.sellPrice}</span>
+                          </button>
+                        ))}
+                      </div>
                     )}
                   </div>
+                  <button 
+                    className="pos-add-btn"
+                    onClick={() => {
+                      const best = getBestSellUnit(product);
+                      const availableInUnit = product.totalStock / best.conversion;
+                      if (availableInUnit < 1) {
+                        toast.error(`Only ${Math.floor(availableInUnit)} ${best.label} available`);
+                        return;
+                      }
+                      addToCart(product, best.name, 1);
+                    }}
+                    disabled={product.isOutOfStock}
+                  >
+                    <Plus size={20} />
+                  </button>
                 </div>
-                <button 
-                  className="pos-add-btn"
-                  onClick={() => addToCart({
-                    id: product._id,
-                    name: product.name,
-                    price: product.sellingPrice,
-                    stock: product.quantity,
-                    buyingPrice: product.buyingPrice
-                  })}
-                  disabled={product.isOutOfStock}
-                >
-                  <FontAwesomeIcon icon={faPlus} />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -698,55 +911,66 @@ export default function Pos() {
             {/* Cart Header */}
             <div className="pos-cart-header">
               <h3>
-                <FontAwesomeIcon icon={faShoppingCart} /> Cart
+                <ShoppingCart size={18} /> Cart
               </h3>
-              <span className="pos-cart-count">{itemCount} items</span>
+              <span className="pos-cart-count">{itemCount} units</span>
             </div>
 
             {/* Cart Items */}
             <div className="pos-cart-items">
               {cart.length === 0 ? (
                 <div className="pos-empty-cart">
-                  <FontAwesomeIcon icon={faShoppingCart} />
+                  <ShoppingCart size={32} />
                   <p>No items in cart</p>
-                  <span>Search or speak to add items</span>
+                  <span>Search, scan, or speak to add items</span>
                 </div>
               ) : (
-                cart.map((item) => (
-                  <div key={item.id} className="pos-cart-item">
+                cart.map((item, index) => (
+                  <div key={`${item.productId}-${item.unitName}-${index}`} className="pos-cart-item">
                     <div className="pos-cart-item-info">
-                      <span className="pos-cart-item-name">{item.name}</span>
+                      <span className="pos-cart-item-name">
+                        {item.productName}
+                        <span className="pos-cart-item-unit">({item.unitLabel})</span>
+                      </span>
                       <span className="pos-cart-item-price">KES {item.price}</span>
                     </div>
                     <div className="pos-cart-item-actions">
                       <button 
                         className="pos-qty-btn minus"
-                        onClick={() => updateQuantity(item.id, -1)}
+                        onClick={() => updateQuantity(item.productId, item.unitName, -1)}
                         disabled={item.quantity <= 1}
                       >
-                        <FontAwesomeIcon icon={faMinus} />
+                        <Minus size={14} />
                       </button>
                       <span className="pos-cart-item-qty">{item.quantity}</span>
                       <button 
                         className="pos-qty-btn plus"
-                        onClick={() => updateQuantity(item.id, 1)}
-                        disabled={item.quantity >= item.stock}
+                        onClick={() => updateQuantity(item.productId, item.unitName, 1)}
+                        disabled={item.quantity >= item.maxQuantity}
                       >
-                        <FontAwesomeIcon icon={faPlus} />
+                        <Plus size={14} />
                       </button>
                       <button 
                         className="pos-cart-remove"
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => removeFromCart(item.productId, item.unitName)}
                       >
-                        <FontAwesomeIcon icon={faTrash} />
+                        <Trash2 size={14} />
                       </button>
+                    </div>
+                    <div className="pos-cart-item-base">
+                      <span className="pos-cart-item-conversion">
+                        {item.quantityInBase} {item.baseUnit?.label || 'units'}
+                      </span>
+                      <span className="pos-cart-item-total">
+                        KES {item.totalPrice.toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 ))
               )}
             </div>
 
-            {/* Checkout - NO VAT */}
+            {/* Checkout */}
             <div className="pos-checkout">
               {/* Customer Input */}
               <div className="pos-checkout-row">
@@ -756,6 +980,14 @@ export default function Pos() {
                   value={customer}
                   onChange={(e) => setCustomer(e.target.value)}
                   className="pos-customer-input"
+                />
+                <input
+                  type="text"
+                  placeholder="Phone (optional)"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  className="pos-customer-input"
+                  style={{ width: '45%' }}
                 />
               </div>
 
@@ -769,22 +1001,32 @@ export default function Pos() {
                     Cash
                   </button>
                   <button
-                    className={`pos-payment-btn ${paymentMethod === 'mobile_money' ? 'active' : ''}`}
-                    onClick={() => setPaymentMethod('mobile_money')}
+                    className={`pos-payment-btn ${paymentMethod === 'mpesa' ? 'active' : ''}`}
+                    onClick={() => setPaymentMethod('mpesa')}
                   >
-                    Mobile Money
+                    M-Pesa
                   </button>
                   <button
-                    className={`pos-payment-btn ${paymentMethod === 'bank_transfer' ? 'active' : ''}`}
-                    onClick={() => setPaymentMethod('bank_transfer')}
+                    className={`pos-payment-btn ${paymentMethod === 'bank' ? 'active' : ''}`}
+                    onClick={() => setPaymentMethod('bank')}
                   >
-                    Bank Transfer
+                    Bank
+                  </button>
+                  <button
+                    className={`pos-payment-btn ${paymentMethod === 'credit' ? 'active' : ''}`}
+                    onClick={() => setPaymentMethod('credit')}
+                  >
+                    Credit
                   </button>
                 </div>
               </div>
 
-              {/* Totals - NO VAT */}
+              {/* Totals */}
               <div className="pos-totals">
+                <div className="pos-total-row">
+                  <span>Items</span>
+                  <span>{cart.length} products ({itemCount} units)</span>
+                </div>
                 <div className="pos-total-row grand-total">
                   <span>Total</span>
                   <span>KES {total.toFixed(2)}</span>
@@ -799,11 +1041,11 @@ export default function Pos() {
               >
                 {processingCheckout ? (
                   <>
-                    <FontAwesomeIcon icon={faSpinner} spin /> Processing...
+                    <LoaderCircle className="spin" size={18} /> Processing...
                   </>
                 ) : (
                   <>
-                    <FontAwesomeIcon icon={faCreditCard} /> 
+                    <CreditCard size={18} /> 
                     Pay KES {total.toFixed(2)}
                   </>
                 )}

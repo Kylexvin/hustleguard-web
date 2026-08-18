@@ -1,20 +1,20 @@
 // src/pages/MobilePos.jsx
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faSearch, 
-  faPlus, 
-  faMinus, 
-  faTrash, 
-  faCreditCard, 
-  faShoppingCart,
-  faTimes,
-  faQrcode,
-  faMicrophone,
-  faMicrophoneSlash,
-  faSpinner,
-  faExclamationTriangle
-} from '@fortawesome/free-solid-svg-icons';
+import {
+  Search,
+  Plus,
+  Minus,
+  Trash2,
+  CreditCard,
+  ShoppingCart,
+  X,
+  QrCode,
+  Mic,
+  MicOff,
+  LoaderCircle,
+  TriangleAlert,
+  Package
+} from 'lucide-react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -51,26 +51,38 @@ export default function MobilePos() {
   }, [cart]);
 
   // Add to cart
-  const addToCart = useCallback((product) => {
+  const addToCart = useCallback((product, unitName = null) => {
     const currentCart = cartRef.current;
-    const existing = currentCart.find(item => item.id === product.id);
+    const existing = currentCart.find(item => item.productId === product.productId && item.unitName === (unitName || 'base'));
 
     if (existing) {
-      if (existing.quantity >= product.stock) {
+      if (existing.quantity >= product.availableStock) {
         toast.error('Not enough stock available');
         return;
       }
       setCart(prev => prev.map(item =>
-        item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        item.productId === product.productId && item.unitName === (unitName || 'base')
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
       ));
-      toast.success(`Added another ${product.name}`);
+      toast.success(`Added another ${product.productName}`);
     } else {
-      if (product.stock === 0) {
+      if (product.availableStock === 0) {
         toast.error('Product out of stock');
         return;
       }
-      setCart(prev => [...prev, { ...product, quantity: 1 }]);
-      toast.success(`${product.name} added to cart`);
+      setCart(prev => [...prev, {
+        productId: product.productId,
+        productName: product.productName,
+        unitName: unitName || 'base',
+        unitLabel: product.unitLabel || 'Unit',
+        conversion: product.conversion || 1,
+        quantity: 1,
+        price: product.unitPrice || product.sellingPrice || 0,
+        availableStock: product.availableStock || 0,
+        baseUnit: product.baseUnit || 'unit'
+      }]);
+      toast.success(`${product.productName} added to cart`);
     }
     
     if (currentCart.length === 0) {
@@ -79,8 +91,8 @@ export default function MobilePos() {
   }, []);
 
   // Remove from cart
-  const removeFromCart = useCallback((id) => {
-    setCart(prev => prev.filter(item => item.id !== id));
+  const removeFromCart = useCallback((productId, unitName) => {
+    setCart(prev => prev.filter(item => !(item.productId === productId && item.unitName === unitName)));
     toast.success('Item removed');
     if (cart.length <= 1) {
       setIsCartOpen(false);
@@ -88,19 +100,19 @@ export default function MobilePos() {
   }, [cart.length]);
 
   // Update quantity
-  const updateQuantity = useCallback((id, change) => {
+  const updateQuantity = useCallback((productId, unitName, change) => {
     const currentCart = cartRef.current;
-    const item = currentCart.find(i => i.id === id);
+    const item = currentCart.find(i => i.productId === productId && i.unitName === unitName);
     
     if (!item) return;
     
     const newQty = item.quantity + change;
-    if (newQty > item.stock) {
+    if (newQty > item.availableStock) {
       toast.error('Not enough stock');
       return;
     }
     if (newQty <= 0) {
-      setCart(prev => prev.filter(i => i.id !== id));
+      setCart(prev => prev.filter(i => !(i.productId === productId && i.unitName === unitName)));
       toast.success('Item removed');
       if (cart.length <= 1) {
         setIsCartOpen(false);
@@ -109,31 +121,47 @@ export default function MobilePos() {
     }
     
     setCart(prev => prev.map(i =>
-      i.id === id ? { ...i, quantity: newQty } : i
+      i.productId === productId && i.unitName === unitName
+        ? { ...i, quantity: newQty }
+        : i
     ));
   }, [cart.length]);
 
-  // Load initial products
+  // Load initial products (using POS endpoint with units)
   const loadInitialProducts = useCallback(async () => {
     try {
       setLoadingInitial(true);
       setError(null);
-      const response = await axios.get('/products');
+      const response = await axios.get('/pos/products/search', {
+        params: {
+          limit: 50,
+          includeOutOfStock: false,
+          includeUnits: true
+        }
+      });
       
       if (response.data.success) {
-        const posProducts = response.data.data.map(product => ({
-          _id: product._id,
-          name: product.name,
-          sellingPrice: product.sellingPrice,
-          quantity: product.quantity,
-          barcode: product.barcode,
-          category: product.category,
-          unit: product.unit,
-          minStockAlert: product.minStockAlert,
-          buyingPrice: product.buyingPrice,
-          isLowStock: product.quantity <= product.minStockAlert,
-          isOutOfStock: product.quantity === 0
-        }));
+        const posProducts = response.data.data.map(product => {
+          // Get the best sell unit (prefer base unit or first available)
+          const sellUnit = product.sellUnits?.find(u => u.isBase) || product.sellUnits?.[0];
+          return {
+            productId: product._id,
+            productName: product.name,
+            baseUnit: product.baseUnit,
+            sellUnits: product.sellUnits || [],
+            totalStock: product.totalStock || 0,
+            isLowStock: product.isLowStock || false,
+            isOutOfStock: product.isOutOfStock || false,
+            // Primary unit info for quick add
+            primaryUnit: sellUnit ? {
+              name: sellUnit.name,
+              label: sellUnit.label,
+              conversion: sellUnit.conversion,
+              price: sellUnit.sellPrice || 0,
+              availableStock: sellUnit.availableStock || 0
+            } : null
+          };
+        });
         setProducts(posProducts);
       }
     } catch (err) {
@@ -159,12 +187,32 @@ export default function MobilePos() {
         params: {
           query: query.trim(),
           limit: 50,
-          includeOutOfStock: false
+          includeOutOfStock: false,
+          includeUnits: true
         }
       });
       
       if (response.data.success) {
-        setProducts(response.data.data);
+        const posProducts = response.data.data.map(product => {
+          const sellUnit = product.sellUnits?.find(u => u.isBase) || product.sellUnits?.[0];
+          return {
+            productId: product._id,
+            productName: product.name,
+            baseUnit: product.baseUnit,
+            sellUnits: product.sellUnits || [],
+            totalStock: product.totalStock || 0,
+            isLowStock: product.isLowStock || false,
+            isOutOfStock: product.isOutOfStock || false,
+            primaryUnit: sellUnit ? {
+              name: sellUnit.name,
+              label: sellUnit.label,
+              conversion: sellUnit.conversion,
+              price: sellUnit.sellPrice || 0,
+              availableStock: sellUnit.availableStock || 0
+            } : null
+          };
+        });
+        setProducts(posProducts);
       }
     } catch (err) {
       console.error('Error searching products:', err);
@@ -193,7 +241,7 @@ export default function MobilePos() {
     return () => clearTimeout(searchTimeoutRef.current);
   }, [search, searchProducts, loadInitialProducts]);
 
-  // Get product by barcode
+  // Get product by barcode (with unit info)
   const handleBarcodeScan = useCallback(async (barcode) => {
     if (!barcode || barcode.trim() === '') return;
 
@@ -203,14 +251,26 @@ export default function MobilePos() {
       
       if (response.data.success) {
         const product = response.data.data;
+        
+        // Find which unit was scanned
+        const matchedUnit = product.matchedUnit || product.sellUnits?.[0];
+        const unitName = matchedUnit?.name || 'base';
+        const unitLabel = matchedUnit?.label || 'Unit';
+        const conversion = matchedUnit?.conversion || 1;
+        const sellPrice = matchedUnit?.sellPrice || matchedUnit?.price || 0;
+        const availableStock = matchedUnit?.availableStock || product.totalStock || 0;
+
         addToCart({
-          id: product._id,
-          name: product.name,
-          price: product.sellingPrice,
-          stock: product.quantity,
-          barcode: product.barcode,
-          buyingPrice: product.buyingPrice || (product.sellingPrice * 0.7)
-        });
+          productId: product._id,
+          productName: product.name,
+          unitName: unitName,
+          unitLabel: unitLabel,
+          conversion: conversion,
+          unitPrice: sellPrice,
+          availableStock: availableStock,
+          baseUnit: product.baseUnit
+        }, unitName);
+        
         setBarcodeInput('');
       }
     } catch (err) {
@@ -221,15 +281,22 @@ export default function MobilePos() {
     }
   }, [addToCart]);
 
-  // Handle checkout - ACTUAL SALE FUNCTION (NO VAT)
+  // Handle checkout - UPDATED for multi-item sales
   const handleCheckout = useCallback(async () => {
     if (cart.length === 0) {
       toast.error('Cart is empty');
       return;
     }
 
-    // Calculate total (NO VAT)
+    // Calculate total
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Build sale items
+    const saleItems = cart.map(item => ({
+      productId: item.productId,
+      unitName: item.unitName,
+      quantity: item.quantity
+    }));
 
     // Confirm with SweetAlert
     const result = await Swal.fire({
@@ -255,23 +322,19 @@ export default function MobilePos() {
     try {
       setProcessingCheckout(true);
       
-      // Create sale for each item in cart
-      const salePromises = cart.map(async (item) => {
-        const saleData = {
-          productId: item.id,
-          quantity: item.quantity,
-          sellingPrice: item.price,
-          customer: customer || 'Walk-in Customer',
-          paymentMethod: paymentMethod,
-          notes: `POS Sale - ${new Date().toLocaleString()}`
-        };
+      // Single API call with all items
+      const saleData = {
+        items: saleItems,
+        customer: customer || 'Walk-in Customer',
+        customerPhone: '',
+        paymentMethod: paymentMethod,
+        paymentStatus: 'paid',
+        amountPaid: total,
+        notes: `POS Sale - ${new Date().toLocaleString()}`
+      };
 
-        console.log('Sending sale data:', saleData);
-        const response = await axios.post('/sales', saleData);
-        return response.data;
-      });
-
-      await Promise.all(salePromises);
+      console.log('Sending sale data:', saleData);
+      const response = await axios.post('/sales', saleData);
       
       toast.success(`Sale complete! Total: KES ${total.toFixed(2)}`);
       
@@ -279,6 +342,7 @@ export default function MobilePos() {
         title: 'Sale Complete!',
         html: `
           <div style="text-align: left;">
+            <p><strong>Invoice:</strong> ${response.data.data?.invoiceNumber || 'N/A'}</p>
             <p><strong>Total:</strong> KES ${total.toFixed(2)}</p>
             <p><strong>Items:</strong> ${cart.length}</p>
             <p><strong>Customer:</strong> ${customer || 'Walk-in'}</p>
@@ -308,7 +372,7 @@ export default function MobilePos() {
     }
   }, [cart, customer, paymentMethod]);
 
-  // Voice command processing
+  // Voice command processing (updated for new product structure)
   const processVoiceCommand = useCallback((transcript) => {
     const lower = transcript.toLowerCase().trim();
     
@@ -331,17 +395,17 @@ export default function MobilePos() {
     }
 
     if (lower.includes('remove') || lower.includes('delete')) {
-      const match = products.find(p => lower.includes(p.name.toLowerCase()));
+      const match = products.find(p => lower.includes(p.productName.toLowerCase()));
       if (match) {
-        const existing = cart.find(item => item.id === match._id);
+        const existing = cart.find(item => item.productId === match.productId);
         if (existing) {
           if (existing.quantity > 1) {
-            updateQuantity(match._id, -1);
+            updateQuantity(match.productId, existing.unitName, -1);
           } else {
-            removeFromCart(match._id);
+            removeFromCart(match.productId, existing.unitName);
           }
         } else {
-          toast.error(`${match.name} not in cart`);
+          toast.error(`${match.productName} not in cart`);
         }
       }
       return;
@@ -373,7 +437,7 @@ export default function MobilePos() {
     let matchedScore = 0;
 
     products.forEach(p => {
-      const pLower = p.name.toLowerCase();
+      const pLower = p.productName.toLowerCase();
       const score = productName.split(' ').filter(word => 
         pLower.includes(word) || word.includes(pLower)
       ).length;
@@ -385,19 +449,28 @@ export default function MobilePos() {
     });
 
     if (matchedProduct && matchedScore > 0) {
-      if (matchedProduct.quantity < quantity) {
-        toast.error(`Only ${matchedProduct.quantity} in stock`);
-        quantity = matchedProduct.quantity;
+      const unit = matchedProduct.primaryUnit;
+      if (!unit) {
+        toast.error(`No sell unit available for ${matchedProduct.productName}`);
+        return;
+      }
+      
+      if (unit.availableStock < quantity) {
+        toast.error(`Only ${unit.availableStock} in stock`);
+        quantity = unit.availableStock;
       }
       
       if (quantity > 0) {
         addToCart({
-          id: matchedProduct._id,
-          name: matchedProduct.name,
-          price: matchedProduct.sellingPrice,
-          stock: matchedProduct.quantity,
-          buyingPrice: matchedProduct.buyingPrice
-        });
+          productId: matchedProduct.productId,
+          productName: matchedProduct.productName,
+          unitName: unit.name,
+          unitLabel: unit.label,
+          conversion: unit.conversion,
+          unitPrice: unit.price,
+          availableStock: unit.availableStock,
+          baseUnit: matchedProduct.baseUnit
+        }, unit.name);
         
         setVoiceStatus('confirmed');
         
@@ -498,7 +571,7 @@ export default function MobilePos() {
     handleBarcodeScan(barcodeInput);
   };
 
-  // Calculate totals (NO VAT)
+  // Calculate totals
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -564,7 +637,7 @@ export default function MobilePos() {
               className="mobile-cart-btn"
               onClick={() => setIsCartOpen(!isCartOpen)}
             >
-              <FontAwesomeIcon icon={faShoppingCart} />
+              <ShoppingCart size={20} />
               {itemCount > 0 && (
                 <span className="mobile-cart-badge">{itemCount}</span>
               )}
@@ -575,7 +648,7 @@ export default function MobilePos() {
         {/* Search */}
         <div className="mobile-pos-search">
           <div className="mobile-pos-search-wrapper">
-            <FontAwesomeIcon icon={faSearch} className="mobile-pos-search-icon" />
+            <Search className="mobile-pos-search-icon" size={18} />
             <input
               type="text"
               placeholder="Search products..."
@@ -584,7 +657,7 @@ export default function MobilePos() {
             />
             {search && (
               <button className="mobile-pos-search-clear" onClick={() => setSearch('')}>
-                <FontAwesomeIcon icon={faTimes} />
+                <X size={16} />
               </button>
             )}
           </div>
@@ -601,13 +674,13 @@ export default function MobilePos() {
               className="mobile-scan-btn"
               onClick={() => document.getElementById('mobile-barcode-scanner')?.focus()}
             >
-              <FontAwesomeIcon icon={faQrcode} />
+              <QrCode size={18} />
             </button>
             <button 
               className={`mobile-voice-btn ${isListening ? 'listening' : ''}`}
               onClick={toggleListening}
             >
-              <FontAwesomeIcon icon={isListening ? faMicrophoneSlash : faMicrophone} />
+              {isListening ? <MicOff size={18} /> : <Mic size={18} />}
               {isListening && <span className="mobile-voice-pulse"></span>}
             </button>
           </div>
@@ -635,7 +708,7 @@ export default function MobilePos() {
         {/* Barcode error */}
         {barcodeError && (
           <div className="mobile-barcode-error">
-            <FontAwesomeIcon icon={faExclamationTriangle} />
+            <TriangleAlert size={16} />
             <span>{barcodeError}</span>
           </div>
         )}
@@ -644,49 +717,95 @@ export default function MobilePos() {
         <div className="mobile-pos-products">
           {loadingInitial ? (
             <div className="mobile-pos-loading">
-              <FontAwesomeIcon icon={faSpinner} spin />
+              <LoaderCircle className="spin" size={24} />
               <span>Loading...</span>
             </div>
           ) : searching ? (
             <div className="mobile-pos-loading">
-              <FontAwesomeIcon icon={faSpinner} spin />
+              <LoaderCircle className="spin" size={24} />
               <span>Searching...</span>
             </div>
           ) : error ? (
             <div className="mobile-pos-error">
-              <FontAwesomeIcon icon={faExclamationTriangle} />
+              <TriangleAlert size={20} />
               <span>{error}</span>
             </div>
           ) : products.length === 0 ? (
             <div className="mobile-pos-empty">
+              <Package size={32} />
               <p>No products</p>
               <span>Add products from Stock page</span>
             </div>
           ) : (
-            products.map((product) => (
-              <div key={product._id} className="mobile-product-card">
-                <div className="mobile-product-info">
-                  <h4>{product.name}</h4>
-                  <div className="mobile-product-meta">
-                    <span className="mobile-product-price">KES {product.sellingPrice}</span>
-                    <span className="mobile-product-stock">{product.quantity} left</span>
+            products.map((product) => {
+              const unit = product.primaryUnit;
+              const price = unit?.price || 0;
+              const stock = unit?.availableStock || product.totalStock || 0;
+              const unitLabel = unit?.label || 'Unit';
+              
+              return (
+                <div key={product.productId} className="mobile-product-card">
+                  <div className="mobile-product-info">
+                    <h4>{product.productName}</h4>
+                    <div className="mobile-product-meta">
+                      <span className="mobile-product-price">KES {price}</span>
+                      <span className="mobile-product-stock">{stock} {unitLabel}s left</span>
+                    </div>
+                    {product.sellUnits && product.sellUnits.length > 1 && (
+                      <div className="mobile-product-units">
+                        {product.sellUnits.slice(0, 3).map((u, idx) => (
+                          <button 
+                            key={idx}
+                            className="mobile-unit-btn"
+                            onClick={() => {
+                              const availableStock = u.availableStock || 0;
+                              if (availableStock === 0) {
+                                toast.error(`No stock in ${u.label}`);
+                                return;
+                              }
+                              addToCart({
+                                productId: product.productId,
+                                productName: product.productName,
+                                unitName: u.name,
+                                unitLabel: u.label,
+                                conversion: u.conversion,
+                                unitPrice: u.sellPrice || 0,
+                                availableStock: availableStock,
+                                baseUnit: product.baseUnit
+                              }, u.name);
+                            }}
+                            disabled={u.availableStock === 0}
+                          >
+                            {u.label}
+                            {u.availableStock === 0 && ' (out)'}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
+                  <button 
+                    className="mobile-add-btn"
+                    onClick={() => {
+                      if (unit) {
+                        addToCart({
+                          productId: product.productId,
+                          productName: product.productName,
+                          unitName: unit.name,
+                          unitLabel: unit.label,
+                          conversion: unit.conversion,
+                          unitPrice: unit.price,
+                          availableStock: unit.availableStock,
+                          baseUnit: product.baseUnit
+                        }, unit.name);
+                      }
+                    }}
+                    disabled={product.isOutOfStock || !unit}
+                  >
+                    <Plus size={20} />
+                  </button>
                 </div>
-                <button 
-                  className="mobile-add-btn"
-                  onClick={() => addToCart({
-                    id: product._id,
-                    name: product.name,
-                    price: product.sellingPrice,
-                    stock: product.quantity,
-                    buyingPrice: product.buyingPrice
-                  })}
-                  disabled={product.isOutOfStock}
-                >
-                  <FontAwesomeIcon icon={faPlus} />
-                </button>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -711,7 +830,7 @@ export default function MobilePos() {
               className="mobile-cart-close"
               onClick={() => setIsCartOpen(false)}
             >
-              <FontAwesomeIcon icon={faTimes} />
+              <X size={18} />
             </button>
           </div>
 
@@ -719,38 +838,41 @@ export default function MobilePos() {
           <div className="mobile-cart-items">
             {cart.length === 0 ? (
               <div className="mobile-cart-empty">
-                <FontAwesomeIcon icon={faShoppingCart} />
+                <ShoppingCart size={32} />
                 <p>Cart is empty</p>
                 <span>Add items from the product list</span>
               </div>
             ) : (
-              cart.map((item) => (
-                <div key={item.id} className="mobile-cart-item">
+              cart.map((item, index) => (
+                <div key={index} className="mobile-cart-item">
                   <div className="mobile-cart-item-info">
-                    <span className="mobile-cart-item-name">{item.name}</span>
+                    <span className="mobile-cart-item-name">
+                      {item.productName}
+                      <span className="mobile-cart-item-unit"> ({item.unitLabel})</span>
+                    </span>
                     <span className="mobile-cart-item-price">KES {item.price}</span>
                   </div>
                   <div className="mobile-cart-item-actions">
                     <button 
                       className="mobile-qty-btn minus"
-                      onClick={() => updateQuantity(item.id, -1)}
+                      onClick={() => updateQuantity(item.productId, item.unitName, -1)}
                       disabled={item.quantity <= 1}
                     >
-                      <FontAwesomeIcon icon={faMinus} />
+                      <Minus size={14} />
                     </button>
                     <span className="mobile-cart-item-qty">{item.quantity}</span>
                     <button 
                       className="mobile-qty-btn plus"
-                      onClick={() => updateQuantity(item.id, 1)}
-                      disabled={item.quantity >= item.stock}
+                      onClick={() => updateQuantity(item.productId, item.unitName, 1)}
+                      disabled={item.quantity >= item.availableStock}
                     >
-                      <FontAwesomeIcon icon={faPlus} />
+                      <Plus size={14} />
                     </button>
                     <button 
                       className="mobile-cart-remove"
-                      onClick={() => removeFromCart(item.id)}
+                      onClick={() => removeFromCart(item.productId, item.unitName)}
                     >
-                      <FontAwesomeIcon icon={faTrash} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
@@ -758,7 +880,7 @@ export default function MobilePos() {
             )}
           </div>
 
-          {/* Checkout - NO VAT */}
+          {/* Checkout */}
           <div className="mobile-cart-checkout">
             <input
               type="text"
@@ -789,7 +911,7 @@ export default function MobilePos() {
               </button>
             </div>
 
-            {/* Totals - NO VAT */}
+            {/* Totals */}
             <div className="mobile-cart-totals">
               <div className="mobile-total-row grand-total">
                 <span>Total</span>
@@ -804,11 +926,11 @@ export default function MobilePos() {
             >
               {processingCheckout ? (
                 <>
-                  <FontAwesomeIcon icon={faSpinner} spin /> Processing...
+                  <LoaderCircle className="spin" size={18} /> Processing...
                 </>
               ) : (
                 <>
-                  <FontAwesomeIcon icon={faCreditCard} /> 
+                  <CreditCard size={18} /> 
                   Pay KES {total.toFixed(2)}
                 </>
               )}
