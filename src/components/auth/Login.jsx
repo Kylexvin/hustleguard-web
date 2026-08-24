@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEnvelope, faLock, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { Shield } from 'lucide-react';
 import './css/Auth.css';
 
 export default function Login() {
@@ -10,7 +9,6 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -33,53 +31,44 @@ export default function Login() {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-logo">🛡️</div>
+          <div className="auth-logo">
+            <Shield size={32} />
+          </div>
           <h1>HustleGuard</h1>
           <p>Smart Inventory Management</p>
         </div>
 
         {error && (
           <div className="auth-error">
-            <span>⚠️</span> {error}
+            {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label>Email Address</label>
-            <div className="input-wrapper">
-              <FontAwesomeIcon icon={faEnvelope} className="input-icon" />
-              <input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
+              className="auth-input"
+            />
           </div>
 
           <div className="form-group">
             <label>Password</label>
-            <div className="input-wrapper">
-              <FontAwesomeIcon icon={faLock} className="input-icon" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
-              <button
-                type="button"
-                className="toggle-password"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
-              </button>
-            </div>
+            <input
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+              className="auth-input"
+            />
           </div>
 
           <button

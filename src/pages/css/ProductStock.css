@@ -583,3 +583,74 @@
     font-size: 18px;
   }
 }
+
+/* Edit Quantity */
+.edit-quantity-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.edit-quantity-input {
+  width: 70px;
+  padding: 4px 6px;
+  border: 1.5px solid #1B4D3D;
+  border-radius: 4px;
+  font-size: 13px;
+  background: #FFF;
+  outline: none;
+}
+
+.edit-quantity-input:focus {
+  box-shadow: 0 0 0 3px rgba(27, 77, 61, 0.15);
+}
+
+.edit-save-btn,
+.edit-cancel-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.edit-save-btn {
+  color: #1B4D3D;
+}
+
+.edit-save-btn:hover {
+  background: #E8F1EC;
+}
+
+.edit-cancel-btn {
+  color: #95A5A6;
+}
+
+.edit-cancel-btn:hover {
+  background: #FDE8E8;
+  color: #dc3545;
+}
+
+.batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.batch-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  color: #95A5A6;
+  font-size: 14px;
+}
+
+.batch-edit-btn:hover {
+  background: #E8F1EC;
+  color: #1B4D3D;
+}

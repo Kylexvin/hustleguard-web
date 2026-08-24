@@ -1,18 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faUser, 
-  faEnvelope, 
-  faLock, 
-  faStore, 
-  faPhone, 
-  faEye, 
-  faEyeSlash,
-  faArrowLeft
-} from '@fortawesome/free-solid-svg-icons';
+import { Shield, ArrowLeft } from 'lucide-react';
 import api from '../../api/client';
-import { useAuth } from '../../hooks/useAuth'; // ADD THIS
+import { useAuth } from '../../hooks/useAuth';
 import './css/Auth.css';
 
 export default function Register() {
@@ -25,9 +15,8 @@ export default function Register() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth(); // ADD THIS
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,16 +24,14 @@ export default function Register() {
     setLoading(true);
 
     try {
-      // Register the user
       await api.post('/auth/register', formData);
       
-      // Auto-login after registration
       const result = await login(formData.email, formData.password);
       
       if (result.success) {
-        navigate('/'); // Go to dashboard
+        navigate('/');
       } else {
-        navigate('/login'); // Fallback to login if auto-login fails
+        navigate('/login');
       }
     } catch (error) {
       setError(error.response?.data?.message || 'Registration failed');
@@ -58,101 +45,86 @@ export default function Register() {
       <div className="auth-card auth-card-register">
         <div className="auth-header">
           <button className="back-btn" onClick={() => navigate('/login')}>
-            <FontAwesomeIcon icon={faArrowLeft} /> Back
+            <ArrowLeft size={16} /> Back
           </button>
-          <div className="auth-logo">🛡️</div>
+          <div className="auth-logo">
+            <Shield size={32} />
+          </div>
           <h1>Create Account</h1>
           <p>Start managing your shop today</p>
         </div>
 
         {error && (
           <div className="auth-error">
-            <span>⚠️</span> {error}
+            {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label>Full Name</label>
-            <div className="input-wrapper">
-              <FontAwesomeIcon icon={faUser} className="input-icon" />
-              <input
-                type="text"
-                placeholder="Enter your full name"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                required
-                disabled={loading}
-              />
-            </div>
+            <input
+              type="text"
+              placeholder="Enter your full name"
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              required
+              disabled={loading}
+              className="auth-input"
+            />
           </div>
 
           <div className="form-group">
             <label>Email Address</label>
-            <div className="input-wrapper">
-              <FontAwesomeIcon icon={faEnvelope} className="input-icon" />
-              <input
-                type="email"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                required
-                disabled={loading}
-              />
-            </div>
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              required
+              disabled={loading}
+              className="auth-input"
+            />
           </div>
 
           <div className="form-group">
             <label>Shop Name</label>
-            <div className="input-wrapper">
-              <FontAwesomeIcon icon={faStore} className="input-icon" />
-              <input
-                type="text"
-                placeholder="Enter your shop name"
-                value={formData.shopName}
-                onChange={(e) => setFormData({...formData, shopName: e.target.value})}
-                required
-                disabled={loading}
-              />
-            </div>
+            <input
+              type="text"
+              placeholder="Enter your shop name"
+              value={formData.shopName}
+              onChange={(e) => setFormData({...formData, shopName: e.target.value})}
+              required
+              disabled={loading}
+              className="auth-input"
+            />
           </div>
 
           <div className="form-group">
             <label>Phone Number</label>
-            <div className="input-wrapper">
-              <FontAwesomeIcon icon={faPhone} className="input-icon" />
-              <input
-                type="tel"
-                placeholder="Enter your phone number"
-                value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                required
-                disabled={loading}
-              />
-            </div>
+            <input
+              type="tel"
+              placeholder="Enter your phone number"
+              value={formData.phone}
+              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+              required
+              disabled={loading}
+              className="auth-input"
+            />
           </div>
 
           <div className="form-group">
             <label>Password</label>
-            <div className="input-wrapper">
-              <FontAwesomeIcon icon={faLock} className="input-icon" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Create a password (min 6 characters)"
-                value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
-                required
-                minLength={6}
-                disabled={loading}
-              />
-              <button
-                type="button"
-                className="toggle-password"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
-              </button>
-            </div>
+            <input
+              type="password"
+              placeholder="Create a password (min 6 characters)"
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              required
+              minLength={6}
+              disabled={loading}
+              className="auth-input"
+            />
           </div>
 
           <button
@@ -171,5 +143,3 @@ export default function Register() {
     </div>
   );
 }
-
-

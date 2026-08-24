@@ -15,10 +15,11 @@ import {
   faInfoCircle,
   faCheckCircle,
   faTimes,
-  faEdit,
   faWarehouse,
   faShoppingCart,
-  faCube
+  faCube,
+  faEdit,
+  faSave
 } from '@fortawesome/free-solid-svg-icons';
 import './css/ProductStock.css';
 
@@ -32,6 +33,9 @@ export default function ProductStock() {
   const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showConvertForm, setShowConvertForm] = useState(false);
+  const [deletingBatchId, setDeletingBatchId] = useState(null);
+  const [editingBatchId, setEditingBatchId] = useState(null);
+  const [editQuantity, setEditQuantity] = useState('');
 
   // Add stock form
   const [addForm, setAddForm] = useState({
@@ -58,11 +62,9 @@ export default function ProductStock() {
       setLoading(true);
       setError(null);
       
-      // Get product
       const productRes = await axios.get(`/products/${id}`);
       setProduct(productRes.data.data);
 
-      // Get stock breakdown
       const stockRes = await axios.get(`/products/${id}/stock`);
       setStockBatches(stockRes.data.data.batches || []);
       
@@ -133,8 +135,8 @@ export default function ProductStock() {
       await axios.post(`/products/${id}/stock`, data);
       
       Swal.fire({
-        title: '✅ Stock Added!',
-        text: `Added ${data.quantity} ${addForm.unitName}(s) to inventory`,
+        title: 'Stock Added',
+        text: `Added ${data.quantity} ${addForm.unitName} to inventory`,
         icon: 'success',
         timer: 1500,
         showConfirmButton: false
@@ -184,7 +186,7 @@ export default function ProductStock() {
       });
 
       Swal.fire({
-        title: '✅ Converted!',
+        title: 'Converted',
         text: `Successfully converted ${convertForm.quantity} ${convertForm.fromUnit} to ${convertForm.toUnit}`,
         icon: 'success',
         timer: 1500,
@@ -206,24 +208,115 @@ export default function ProductStock() {
   // ============================================================
   // Delete stock batch
   // ============================================================
-  const handleDeleteBatch = async (batchId) => {
+  const handleDeleteBatch = async (batchId, batchNumber) => {
     const result = await Swal.fire({
       title: 'Delete Batch?',
-      text: 'This action cannot be undone.',
+      text: `Delete batch ${batchNumber || '#' + batchId}? This cannot be undone.`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
-      confirmButtonText: 'Delete'
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel'
     });
 
     if (!result.isConfirmed) return;
 
     try {
-      // Note: You may need to add a DELETE endpoint for stock batches
-      Swal.fire('Info', 'Delete functionality coming soon', 'info');
+      setDeletingBatchId(batchId);
+      await axios.delete(`/products/${id}/stock/${batchId}`);
+      
+      Swal.fire({
+        title: 'Deleted',
+        text: 'Batch deleted successfully',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+      fetchData();
+
     } catch (err) {
       console.error('Error deleting batch:', err);
+      Swal.fire('Error', err.response?.data?.message || 'Failed to delete batch', 'error');
+    } finally {
+      setDeletingBatchId(null);
     }
+  };
+
+  // ============================================================
+  // Edit stock quantity - FIXED with proper number handling
+  // ============================================================
+  const handleEditQuantity = (batchId, currentQuantity) => {
+    setEditingBatchId(batchId);
+    setEditQuantity(String(currentQuantity));
+  };
+
+  const handleSaveQuantity = async (batchId) => {
+    const rawValue = editQuantity.trim();
+    if (rawValue === '') {
+      Swal.fire('Error', 'Please enter a quantity', 'error');
+      return;
+    }
+
+    const newQuantity = parseFloat(rawValue);
+    if (isNaN(newQuantity) || newQuantity < 0) {
+      Swal.fire('Error', 'Please enter a valid quantity (0 or greater)', 'error');
+      return;
+    }
+
+    const batch = stockBatches.find(b => b._id === batchId);
+    if (!batch) {
+      Swal.fire('Error', 'Batch not found', 'error');
+      return;
+    }
+
+    if (newQuantity === batch.remainingQuantity) {
+      setEditingBatchId(null);
+      setEditQuantity('');
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Update Quantity?',
+      text: `Change from ${batch.remainingQuantity} to ${newQuantity} ${batch.unit.label}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#1B4D3D',
+      confirmButtonText: 'Update'
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setProcessing(true);
+      
+      await axios.put(`/products/${id}/stock/${batchId}`, {
+        quantity: newQuantity
+      });
+
+      Swal.fire({
+        title: 'Updated',
+        text: `Quantity updated to ${newQuantity} ${batch.unit.label}`,
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+      setEditingBatchId(null);
+      setEditQuantity('');
+      fetchData();
+
+    } catch (err) {
+      console.error('Error updating quantity:', err);
+      Swal.fire('Error', err.response?.data?.message || 'Failed to update quantity', 'error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingBatchId(null);
+    setEditQuantity('');
   };
 
   // ============================================================
@@ -269,7 +362,7 @@ export default function ProductStock() {
         <div className="product-stock-title">
           <h2>{product.name}</h2>
           <span className="product-stock-subtitle">
-            {product.baseUnit?.label || 'Unit'} · {stockBatches.length} batch(es)
+            {product.baseUnit?.label || 'Unit'} · {stockBatches.length} batch
           </span>
         </div>
         <button className="product-stock-add-btn" onClick={() => setShowAddForm(true)}>
@@ -285,7 +378,7 @@ export default function ProductStock() {
           </div>
           <div className="stock-summary-content">
             <span className="stock-summary-label">Total Stock</span>
-            <span className="stock-summary-value">{totalStock} {product.baseUnit?.label || 'units'}</span>
+            <span className="stock-summary-value">{totalStock} {product.baseUnit?.label || 'unit'}</span>
           </div>
         </div>
         <div className="stock-summary-card">
@@ -293,7 +386,7 @@ export default function ProductStock() {
             <FontAwesomeIcon icon={faLayerGroup} />
           </div>
           <div className="stock-summary-content">
-            <span className="stock-summary-label">Batches</span>
+            <span className="stock-summary-label">Batch</span>
             <span className="stock-summary-value">{stockBatches.length}</span>
           </div>
         </div>
@@ -302,7 +395,7 @@ export default function ProductStock() {
             <FontAwesomeIcon icon={faCube} />
           </div>
           <div className="stock-summary-content">
-            <span className="stock-summary-label">Units</span>
+            <span className="stock-summary-label">Unit</span>
             <span className="stock-summary-value">{stockByUnit.length}</span>
           </div>
         </div>
@@ -356,25 +449,25 @@ export default function ProductStock() {
       {/* All Batches */}
       <div className="product-stock-section">
         <h3>
-          <FontAwesomeIcon icon={faBox} /> All Batches
+          <FontAwesomeIcon icon={faBox} /> All Batch
         </h3>
         <div className="stock-batch-list">
           {stockBatches.length === 0 ? (
             <div className="stock-empty">
-              <p>No batches found</p>
+              <p>No batch found</p>
             </div>
           ) : (
             <table className="stock-batch-table">
               <thead>
                 <tr>
-                  <th>Batch #</th>
+                  <th>Batch</th>
                   <th>Unit</th>
                   <th>Quantity</th>
                   <th>In Base</th>
                   <th>Buy Price</th>
                   <th>Supplier</th>
                   <th>Expiry</th>
-                  <th>Actions</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -382,19 +475,63 @@ export default function ProductStock() {
                   <tr key={batch._id}>
                     <td>{batch.batchNumber || '—'}</td>
                     <td>{batch.unit.label}</td>
-                    <td>{batch.remainingQuantity}</td>
+                    <td>
+                      {editingBatchId === batch._id ? (
+                        <div className="edit-quantity-cell">
+                          <input
+                            type="text"
+                            value={editQuantity}
+                            onChange={(e) => setEditQuantity(e.target.value)}
+                            className="edit-quantity-input"
+                            autoFocus
+                            onFocus={(e) => e.target.select()}
+                          />
+                          <button 
+                            onClick={() => handleSaveQuantity(batch._id)}
+                            className="edit-save-btn"
+                            disabled={processing}
+                          >
+                            <FontAwesomeIcon icon={faSave} />
+                          </button>
+                          <button 
+                            onClick={cancelEdit}
+                            className="edit-cancel-btn"
+                          >
+                            <FontAwesomeIcon icon={faTimes} />
+                          </button>
+                        </div>
+                      ) : (
+                        <span>{batch.remainingQuantity}</span>
+                      )}
+                    </td>
                     <td>{batch.remainingInBase}</td>
                     <td>KES {batch.buyPrice}</td>
                     <td>{batch.supplierName || '—'}</td>
                     <td>{batch.expiryDate ? new Date(batch.expiryDate).toLocaleDateString() : '—'}</td>
                     <td>
-                      <button 
-                        className="batch-delete-btn"
-                        onClick={() => handleDeleteBatch(batch._id)}
-                        title="Delete batch"
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </button>
+                      <div className="batch-actions">
+                        {editingBatchId !== batch._id && (
+                          <button 
+                            className="batch-edit-btn"
+                            onClick={() => handleEditQuantity(batch._id, batch.remainingQuantity)}
+                            title="Edit quantity"
+                          >
+                            <FontAwesomeIcon icon={faEdit} />
+                          </button>
+                        )}
+                        <button 
+                          className="batch-delete-btn"
+                          onClick={() => handleDeleteBatch(batch._id, batch.batchNumber)}
+                          disabled={deletingBatchId === batch._id}
+                          title="Delete batch"
+                        >
+                          {deletingBatchId === batch._id ? (
+                            <FontAwesomeIcon icon={faSpinner} spin />
+                          ) : (
+                            <FontAwesomeIcon icon={faTrash} />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -555,7 +692,7 @@ export default function ProductStock() {
                   <label>&nbsp;</label>
                   <div className="convert-info">
                     <FontAwesomeIcon icon={faInfoCircle} />
-                    <span>Converts to base unit first, then to target</span>
+                    <span>Convert to base unit first, then to target</span>
                   </div>
                 </div>
               </div>

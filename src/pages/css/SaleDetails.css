@@ -1,0 +1,575 @@
+/* src/css/SaleDetails.css */
+
+.sale-details-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 24px 40px;
+  min-height: 100vh;
+  background: #F5F7F6;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.sale-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.sale-details-back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #FFF;
+  border: 1px solid #E8ECF0;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1A2E;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sale-details-back:hover {
+  border-color: #1B4D3D;
+  color: #1B4D3D;
+}
+
+.sale-details-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.sale-details-print {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1B4D3D;
+  color: #FFF;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sale-details-print:hover {
+  background: #23604C;
+}
+
+/* ============================================================
+   MAIN CARD
+   ============================================================ */
+.sale-details-card {
+  background: #FFF;
+  border-radius: 16px;
+  padding: 32px 36px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid #E8ECF0;
+}
+
+/* ============================================================
+   RECEIPT HEADER
+   ============================================================ */
+.sale-receipt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #F5F7F6;
+  margin-bottom: 20px;
+}
+
+.sale-receipt-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1B4D3D;
+}
+
+.sale-receipt-logo svg {
+  color: #1B4D3D;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-badge.paid {
+  background: #E5F5ED;
+  color: #1F8F5F;
+}
+
+.status-badge.pending {
+  background: #FBF1DE;
+  color: #B7791F;
+}
+
+.status-badge.refunded {
+  background: #FBEAE5;
+  color: #B3452F;
+}
+
+/* ============================================================
+   META
+   ============================================================ */
+.sale-details-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 32px;
+  margin-bottom: 24px;
+}
+
+.meta-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.meta-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #95A5A6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.meta-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+/* ============================================================
+   ITEMS TABLE
+   ============================================================ */
+.sale-details-items h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin: 0 0 12px 0;
+}
+
+.sale-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.sale-items-table thead th {
+  text-align: left;
+  padding: 10px 12px;
+  background: #F8FAFB;
+  font-weight: 600;
+  color: #1A1A2E;
+  border-bottom: 2px solid #E8ECF0;
+}
+
+.sale-items-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #F5F7F6;
+  color: #1A1A2E;
+}
+
+.sale-items-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.item-name-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-name {
+  font-weight: 600;
+}
+
+.item-base {
+  font-size: 11px;
+  color: #95A5A6;
+}
+
+.item-unit-cell {
+  color: #7F8C8D;
+  font-size: 12px;
+}
+
+/* ============================================================
+   TOTALS
+   ============================================================ */
+.sale-details-totals {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 2px solid #F5F7F6;
+  max-width: 320px;
+  margin-left: auto;
+}
+
+.totals-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+  color: #1A1A2E;
+}
+
+.totals-row.discount {
+  color: #B7791F;
+}
+
+.totals-row.tax {
+  color: #7F8C8D;
+}
+
+.totals-row.grand-total {
+  font-size: 17px;
+  font-weight: 800;
+  color: #1B4D3D;
+  padding-top: 8px;
+  border-top: 1.5px dashed #E8ECF0;
+  margin-top: 4px;
+}
+
+.totals-row.profit {
+  color: #1F8F5F;
+  font-weight: 600;
+  font-size: 14px;
+  padding-top: 4px;
+  border-top: 1px solid #E8ECF0;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   PAYMENT INFO
+   ============================================================ */
+.sale-details-payment {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 2px solid #F5F7F6;
+}
+
+.payment-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.payment-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #F8FAFB;
+  border-radius: 8px;
+}
+
+.payment-icon {
+  color: #95A5A6;
+  flex-shrink: 0;
+}
+
+.payment-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #95A5A6;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  display: block;
+}
+
+.payment-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.payment-value.paid {
+  color: #1F8F5F;
+}
+
+.payment-value.pending {
+  color: #B7791F;
+}
+
+.payment-value.refunded {
+  color: #B3452F;
+}
+
+/* ============================================================
+   NOTES
+   ============================================================ */
+.sale-details-notes {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #F5F7F6;
+}
+
+.notes-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #95A5A6;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.sale-details-notes p {
+  font-size: 13px;
+  color: #7F8C8D;
+  margin: 0;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.sale-receipt-footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 2px solid #F5F7F6;
+  text-align: center;
+}
+
+.sale-receipt-footer p {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin: 0 0 4px 0;
+}
+
+.sale-receipt-footer span {
+  font-size: 12px;
+  color: #95A5A6;
+}
+
+/* ============================================================
+   LOADING & ERROR
+   ============================================================ */
+.sale-details-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 12px;
+  color: #7F8C8D;
+}
+
+.sale-details-loading svg {
+  color: #1B4D3D;
+}
+
+.sale-details-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 12px;
+  color: #7F8C8D;
+}
+
+.sale-details-error h2 {
+  color: #1A1A2E;
+  margin: 0;
+}
+
+.sale-details-error svg {
+  color: #B7791F;
+}
+
+.error-btn {
+  padding: 10px 24px;
+  background: #1B4D3D;
+  color: #FFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.error-btn:hover {
+  background: #23604C;
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   PRINT
+   ============================================================ */
+@media print {
+  .sale-details-container {
+    background: #FFF;
+    padding: 0;
+    margin: 0;
+  }
+
+  .sale-details-header {
+    display: none;
+  }
+
+  .sale-details-card {
+    box-shadow: none;
+    border: none;
+    border-radius: 0;
+    padding: 20px;
+  }
+
+  .sale-details-print {
+    display: none;
+  }
+
+  .sale-details-back {
+    display: none;
+  }
+
+  .sale-details-payment {
+    break-inside: avoid;
+  }
+
+  .sale-details-totals {
+    break-inside: avoid;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .sale-details-container {
+    padding: 12px 16px 24px;
+  }
+
+  .sale-details-card {
+    padding: 20px 16px;
+  }
+
+  .sale-details-meta {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .sale-items-table {
+    font-size: 12px;
+  }
+
+  .sale-items-table thead th,
+  .sale-items-table tbody td {
+    padding: 6px 8px;
+  }
+
+  .sale-details-totals {
+    max-width: 100%;
+  }
+
+  .payment-info-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sale-receipt-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .sale-details-header {
+    flex-wrap: wrap;
+  }
+
+  .sale-details-actions {
+    width: 100%;
+  }
+
+  .sale-details-print {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .sale-details-container {
+    padding: 8px 10px 16px;
+  }
+
+  .sale-details-card {
+    padding: 14px 10px;
+  }
+
+  .sale-items-table {
+    font-size: 11px;
+  }
+
+  .sale-items-table thead th,
+  .sale-items-table tbody td {
+    padding: 4px 6px;
+  }
+
+  .payment-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sale-details-totals {
+    font-size: 12px;
+  }
+
+  .totals-row.grand-total {
+    font-size: 15px;
+  }
+
+  .sale-receipt-logo {
+    font-size: 16px;
+  }
+
+  .sale-receipt-logo svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .sale-details-back {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .sale-details-print {
+    font-size: 12px;
+    padding: 6px 14px;
+  }
+}

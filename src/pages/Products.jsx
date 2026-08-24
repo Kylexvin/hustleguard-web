@@ -13,7 +13,6 @@ import {
   faSpinner,
   faExclamationTriangle,
   faShoppingCart,
-  faPackage,
   faTags,
   faLayerGroup
 } from '@fortawesome/free-solid-svg-icons';
@@ -34,9 +33,6 @@ export default function Products() {
     fetchProducts();
   }, []);
 
-  // ============================================================
-  // Fetch products with UOM and stock info
-  // ============================================================
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -56,9 +52,6 @@ export default function Products() {
     }
   };
 
-  // ============================================================
-  // Delete product (soft delete)
-  // ============================================================
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Delete "${name}"? This will deactivate the product.`)) return;
 
@@ -309,7 +302,7 @@ export default function Products() {
                       {status.label}
                     </span>
                     <span className="stock-quantity">
-                      {stock} {baseUnitLabel}s
+                      {stock} {baseUnitLabel}
                     </span>
                     {isLowStock && !isOutOfStock && (
                       <span className="stock-warning">Min: {minStock}</span>
@@ -318,16 +311,14 @@ export default function Products() {
                   <div className="product-price-info">
                     <span className="selling-price">KES {primaryPrice}</span>
                     {unitCount > 1 && (
-                      <span className="unit-count" title="Multiple sell units available">
-                        <FontAwesomeIcon icon={faTags} /> {unitCount} units
+                      <span className="unit-count" title="Multiple sell unit available">
+                        <FontAwesomeIcon icon={faTags} /> {unitCount} unit
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* ============================================================
-                    BOTTOM: Actions with Stock button linking to ProductStock page
-                    ============================================================ */}
+                {/* Bottom: Actions */}
                 <div className="product-card-bottom">
                   <div className="product-actions">
                     <button 

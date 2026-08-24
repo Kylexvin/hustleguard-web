@@ -1,0 +1,101 @@
+/* src/css/NotFound.css */
+
+.not-found-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #F3F6F3 0%, #E8F1EC 100%);
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.not-found-content {
+  text-align: center;
+  max-width: 480px;
+}
+
+.not-found-number {
+  font-size: 96px;
+  font-weight: 800;
+  color: #1B4D3D;
+  letter-spacing: -4px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.not-found-content h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin: 0 0 8px 0;
+}
+
+.not-found-content p {
+  font-size: 15px;
+  color: #7F8C8D;
+  margin: 0 0 28px 0;
+  line-height: 1.6;
+}
+
+.not-found-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.not-found-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.not-found-btn.primary {
+  background: #1B4D3D;
+  color: #FFF;
+}
+
+.not-found-btn.primary:hover {
+  background: #23604C;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(27, 77, 61, 0.25);
+}
+
+.not-found-btn.secondary {
+  background: #FFF;
+  color: #1A1A2E;
+  border: 1.5px solid #E8ECF0;
+}
+
+.not-found-btn.secondary:hover {
+  border-color: #1B4D3D;
+  color: #1B4D3D;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 480px) {
+  .not-found-number {
+    font-size: 64px;
+  }
+
+  .not-found-content h1 {
+    font-size: 22px;
+  }
+
+  .not-found-content p {
+    font-size: 14px;
+  }
+
+  .not-found-btn {
+    font-size: 13px;
+    padding: 8px 18px;
+  }
+}

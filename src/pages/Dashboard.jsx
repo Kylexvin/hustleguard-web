@@ -224,9 +224,6 @@ export default function Dashboard() {
     return (
       <div className="dashboard">
         <div className="header">
-          <div className="header-top">
-            <div className="dashboard-title">Dashboard</div>
-          </div>
           <div className="stats-row">
             {[1, 2, 3, 4].map((_, i) => (
               <div className="stat-card" key={i}>
@@ -248,11 +245,6 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="dashboard">
-        <div className="header">
-          <div className="header-top">
-            <div className="dashboard-title">Dashboard</div>
-          </div>
-        </div>
         <div className="section" style={{ textAlign: 'center', padding: '40px 20px' }}>
           <p style={{ color: '#C0392B' }}>{error}</p>
           <button 

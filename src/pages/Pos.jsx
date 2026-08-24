@@ -13,10 +13,7 @@ import {
   MicOff,
   Volume2,
   LoaderCircle,
-  TriangleAlert,
-  Package,
-  ChevronDown,
-  ChevronUp
+  TriangleAlert
 } from 'lucide-react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
@@ -39,7 +36,6 @@ export default function Pos() {
   const [processingCheckout, setProcessingCheckout] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState('');
   const [barcodeError, setBarcodeError] = useState(null);
-  const [expandedProducts, setExpandedProducts] = useState({});
 
   const recognitionRef = useRef(null);
   const timeoutRef = useRef(null);
@@ -47,7 +43,6 @@ export default function Pos() {
   const cartRef = useRef(cart);
   const initialLoadDone = useRef(false);
 
-  // Keep cartRef in sync with cart state
   useEffect(() => {
     cartRef.current = cart;
   }, [cart]);
@@ -65,7 +60,6 @@ export default function Pos() {
         isBase: true
       };
     }
-    // Return first active sell unit (prefer base unit if available)
     const baseUnit = product.sellUnits.find(u => u.isBase);
     return baseUnit || product.sellUnits[0];
   }, []);
@@ -74,14 +68,12 @@ export default function Pos() {
   // Add to cart with UOM support
   // ============================================================
   const addToCart = useCallback((product, unitName = null, quantity = 1) => {
-    // Find the product
     const productData = products.find(p => p.productId === product.productId);
     if (!productData) {
       toast.error('Product not found');
       return;
     }
 
-    // Find the unit
     let unit;
     if (unitName) {
       unit = productData.sellUnits?.find(u => u.name === unitName && u.isActive !== false);
@@ -95,7 +87,6 @@ export default function Pos() {
       return;
     }
 
-    // Check stock availability
     const availableInUnit = productData.totalStock / unit.conversion;
     const currentCart = cartRef.current;
     const existing = currentCart.find(item => 
@@ -115,10 +106,15 @@ export default function Pos() {
     if (existing) {
       setCart(prev => prev.map(item =>
         item.productId === product.productId && item.unitName === unit.name
-          ? { ...item, quantity: item.quantity + quantity }
+          ? { 
+              ...item, 
+              quantity: item.quantity + quantity,
+              totalPrice: (item.quantity + quantity) * unitPrice,
+              quantityInBase: (item.quantity + quantity) * unit.conversion
+            }
           : item
       ));
-      toast.success(`Added ${quantity} more ${unit.label} of ${productData.productName}`);
+      toast.success(`Added ${quantity} more ${unit.label}`);
     } else {
       setCart(prev => [...prev, {
         productId: productData.productId,
@@ -134,7 +130,7 @@ export default function Pos() {
         availableStock: productData.totalStock,
         maxQuantity: Math.floor(availableInUnit)
       }]);
-      toast.success(`${productData.productName} (${unit.label}) added to cart`);
+      toast.success(`${productData.productName} (${unit.label}) added`);
     }
   }, [products, getBestSellUnit]);
 
@@ -180,7 +176,7 @@ export default function Pos() {
   }, [removeFromCart]);
 
   // ============================================================
-  // Load initial products (with UOM and stock)
+  // Load initial products
   // ============================================================
   const loadInitialProducts = useCallback(async () => {
     if (initialLoadDone.current) return;
@@ -226,7 +222,7 @@ export default function Pos() {
   }, []);
 
   // ============================================================
-  // Search products (with UOM)
+  // Search products
   // ============================================================
   const searchProducts = useCallback(async (query) => {
     if (!query || query.trim() === '') {
@@ -266,7 +262,6 @@ export default function Pos() {
       }
     } catch (err) {
       console.error('Error searching products:', err);
-      // Local fallback
       const localResults = products.filter(p => 
         p.productName.toLowerCase().includes(query.toLowerCase())
       );
@@ -298,7 +293,7 @@ export default function Pos() {
   }, [search, searchProducts]);
 
   // ============================================================
-  // Handle barcode scan (searches across all units)
+  // Handle barcode scan
   // ============================================================
   const handleBarcodeScan = useCallback(async (barcode) => {
     if (!barcode || barcode.trim() === '') return;
@@ -310,8 +305,6 @@ export default function Pos() {
       if (response.data.success) {
         const product = response.data.data;
         const stock = product.totalStock || 0;
-        
-        // Find which unit was scanned
         const scannedUnit = product.matchedUnit || getBestSellUnit(product);
         
         addToCart({
@@ -333,21 +326,7 @@ export default function Pos() {
   }, [addToCart, getBestSellUnit]);
 
   // ============================================================
-  // Get product unit availability (for checkout validation)
-  // ============================================================
-  const checkUnitAvailability = useCallback(async (productId, unitName, quantity) => {
-    try {
-      const response = await axios.get(`/pos/products/${productId}/check-unit/${unitName}`, {
-        params: { quantity }
-      });
-      return response.data.data;
-    } catch (err) {
-      return { isAvailable: false, error: err.response?.data?.message || 'Check failed' };
-    }
-  }, []);
-
-  // ============================================================
-  // Handle checkout (multi-item with UOM)
+  // Handle checkout
   // ============================================================
   const handleCheckout = useCallback(async () => {
     if (cart.length === 0) {
@@ -358,7 +337,6 @@ export default function Pos() {
     const total = cart.reduce((sum, item) => sum + item.totalPrice, 0);
     const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-    // Build sale items
     const saleItems = cart.map(item => ({
       productId: item.productId,
       unitName: item.unitName,
@@ -411,7 +389,7 @@ export default function Pos() {
       toast.success(`Sale complete! Total: KES ${total.toFixed(2)}`);
       
       await Swal.fire({
-        title: 'Sale Complete! 🎉',
+        title: 'Sale Complete!',
         html: `
           <div style="text-align: left;">
             <p><strong>Invoice:</strong> ${response.data.data?.invoiceNumber || 'N/A'}</p>
@@ -429,7 +407,6 @@ export default function Pos() {
       setCustomer('');
       setCustomerPhone('');
       
-      // Reload products to update stock
       initialLoadDone.current = false;
       loadInitialProducts();
       
@@ -450,22 +427,11 @@ export default function Pos() {
   }, [cart, customer, customerPhone, paymentMethod, loadInitialProducts]);
 
   // ============================================================
-  // Toggle product units expand
-  // ============================================================
-  const toggleProductExpand = (productId) => {
-    setExpandedProducts(prev => ({
-      ...prev,
-      [productId]: !prev[productId]
-    }));
-  };
-
-  // ============================================================
-  // Voice command processing (updated with UOM)
+  // Voice command processing
   // ============================================================
   const processVoiceCommand = useCallback((transcript) => {
     const lower = transcript.toLowerCase().trim();
     
-    // Clear cart
     if (lower.includes('clear cart') || lower.includes('empty cart') || lower.includes('remove all')) {
       setCart([]);
       setVoiceStatus('confirmed');
@@ -474,7 +440,6 @@ export default function Pos() {
       return;
     }
 
-    // Checkout
     if (lower.includes('checkout') || lower.includes('pay now') || lower.includes('complete sale')) {
       if (cart.length > 0) {
         handleCheckout();
@@ -484,7 +449,6 @@ export default function Pos() {
       return;
     }
 
-    // Remove
     if (lower.includes('remove') || lower.includes('delete')) {
       const match = products.find(p => lower.includes(p.productName.toLowerCase()));
       if (match) {
@@ -498,7 +462,6 @@ export default function Pos() {
       return;
     }
 
-    // Add product with quantity
     const words = lower.split(' ');
     let quantity = 1;
     let productName = '';
@@ -639,13 +602,11 @@ export default function Pos() {
     }
   };
 
-  // Handle barcode submit
   const handleBarcodeSubmit = (e) => {
     e.preventDefault();
     handleBarcodeScan(barcodeInput);
   };
 
-  // Calculate totals
   const total = cart.reduce((sum, item) => sum + item.totalPrice, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -657,9 +618,6 @@ export default function Pos() {
     'Checkout'
   ];
 
-  // ============================================================
-  // Render
-  // ============================================================
   return (
     <>
       <Toaster 
@@ -825,80 +783,61 @@ export default function Pos() {
             )}
             {products.map((product) => {
               const bestUnit = getBestSellUnit(product);
-              const isExpanded = expandedProducts[product.productId];
-              const hasMultipleUnits = product.sellUnits && product.sellUnits.length > 1;
+              const isOutOfStock = product.totalStock <= 0;
               
               return (
                 <div key={product.productId} className="pos-product-card">
                   <div className="pos-product-info">
-                    <h4>{product.productName}</h4>
-                    <div className="pos-product-meta">
-                      <span className="pos-product-price">
-                        KES {bestUnit?.sellPrice || product.price || 0}
+                    <div className="pos-product-header">
+                      <h4>{product.productName}</h4>
+                      <span className={`pos-product-stock ${product.isLowStock ? 'low' : ''} ${isOutOfStock ? 'out' : ''}`}>
+                        {product.totalStock} {product.baseUnit?.label || 'units'}
                       </span>
-                      <span className={`pos-product-stock ${product.isLowStock ? 'low' : ''} ${product.isOutOfStock ? 'out' : ''}`}>
-                        {product.totalStock} {product.baseUnit?.label || 'units'} left
-                      </span>
-                      {product.isLowStock && !product.isOutOfStock && (
-                        <span className="pos-stock-warning">Low</span>
+                    </div>
+                    
+                    {/* Unit Buttons */}
+                    <div className="pos-unit-buttons">
+                      {product.sellUnits && product.sellUnits.length > 0 ? (
+                        product.sellUnits.map(unit => {
+                          const availableInUnit = product.totalStock / unit.conversion;
+                          const isAvailable = availableInUnit >= 1;
+                          const price = unit.sellPrice || 0;
+                          
+                          return (
+                            <button
+                              key={unit.name}
+                              className={`pos-unit-btn ${unit.isBase ? 'base' : ''} ${!isAvailable || isOutOfStock ? 'disabled' : ''}`}
+                              onClick={() => {
+                                if (!isAvailable || isOutOfStock) {
+                                  toast.error(`Only ${Math.floor(availableInUnit)} ${unit.label} available`);
+                                  return;
+                                }
+                                addToCart(product, unit.name, 1);
+                              }}
+                              disabled={!isAvailable || isOutOfStock}
+                            >
+                              <span className="pos-unit-label-text">{unit.label}</span>
+                              <span className="pos-unit-price-text">KES {price}</span>
+                              {unit.isBase && <span className="pos-unit-badge">Base</span>}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <button 
+                          className="pos-unit-btn base"
+                          onClick={() => {
+                            if (!isOutOfStock) {
+                              addToCart(product, bestUnit.name, 1);
+                            }
+                          }}
+                          disabled={isOutOfStock}
+                        >
+                          <span className="pos-unit-label-text">{bestUnit.label}</span>
+                          <span className="pos-unit-price-text">KES {bestUnit.sellPrice || product.price || 0}</span>
+                        </button>
                       )}
                     </div>
-                    {product.sellUnits && product.sellUnits.length > 0 && (
-                      <div className="pos-product-units">
-                        <span className="pos-unit-label">
-                          {bestUnit?.label || 'Unit'}
-                          {hasMultipleUnits && (
-                            <button 
-                              className="pos-unit-toggle"
-                              onClick={() => toggleProductExpand(product.productId)}
-                            >
-                              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                              <span className="pos-unit-count">
-                                +{product.sellUnits.length - 1} more
-                              </span>
-                            </button>
-                          )}
-                        </span>
-                      </div>
-                    )}
-                    {isExpanded && hasMultipleUnits && (
-                      <div className="pos-unit-list">
-                        {product.sellUnits.filter(u => !u.isBase).map(unit => (
-                          <button
-                            key={unit.name}
-                            className="pos-unit-btn"
-                            onClick={() => {
-                              const availableInUnit = product.totalStock / unit.conversion;
-                              if (availableInUnit < 1) {
-                                toast.error(`Only ${Math.floor(availableInUnit)} ${unit.label} available`);
-                                return;
-                              }
-                              addToCart(product, unit.name, 1);
-                            }}
-                            disabled={product.totalStock / unit.conversion < 1}
-                          >
-                            {unit.label}
-                            <span className="pos-unit-price">KES {unit.sellPrice}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
-                  <button 
-                    className="pos-add-btn"
-                    onClick={() => {
-                      const best = getBestSellUnit(product);
-                      const availableInUnit = product.totalStock / best.conversion;
-                      if (availableInUnit < 1) {
-                        toast.error(`Only ${Math.floor(availableInUnit)} ${best.label} available`);
-                        return;
-                      }
-                      addToCart(product, best.name, 1);
-                    }}
-                    disabled={product.isOutOfStock}
-                  >
-                    <Plus size={20} />
-                  </button>
                 </div>
               );
             })}
@@ -922,7 +861,7 @@ export default function Pos() {
                 <div className="pos-empty-cart">
                   <ShoppingCart size={32} />
                   <p>No items in cart</p>
-                  <span>Search, scan, or speak to add items</span>
+                  <span>Search, scan, or tap a unit to add</span>
                 </div>
               ) : (
                 cart.map((item, index) => (
@@ -972,8 +911,7 @@ export default function Pos() {
 
             {/* Checkout */}
             <div className="pos-checkout">
-              {/* Customer Input */}
-              <div className="pos-checkout-row">
+              <div className="pos-checkout-row customer-row">
                 <input
                   type="text"
                   placeholder="Customer name (optional)"
@@ -987,41 +925,23 @@ export default function Pos() {
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   className="pos-customer-input"
-                  style={{ width: '45%' }}
                 />
               </div>
 
-              {/* Payment Method */}
               <div className="pos-checkout-row">
                 <div className="pos-payment-methods">
-                  <button
-                    className={`pos-payment-btn ${paymentMethod === 'cash' ? 'active' : ''}`}
-                    onClick={() => setPaymentMethod('cash')}
-                  >
-                    Cash
-                  </button>
-                  <button
-                    className={`pos-payment-btn ${paymentMethod === 'mpesa' ? 'active' : ''}`}
-                    onClick={() => setPaymentMethod('mpesa')}
-                  >
-                    M-Pesa
-                  </button>
-                  <button
-                    className={`pos-payment-btn ${paymentMethod === 'bank' ? 'active' : ''}`}
-                    onClick={() => setPaymentMethod('bank')}
-                  >
-                    Bank
-                  </button>
-                  <button
-                    className={`pos-payment-btn ${paymentMethod === 'credit' ? 'active' : ''}`}
-                    onClick={() => setPaymentMethod('credit')}
-                  >
-                    Credit
-                  </button>
+                  {['cash', 'mpesa', 'bank', 'credit'].map((method) => (
+                    <button
+                      key={method}
+                      className={`pos-payment-btn ${paymentMethod === method ? 'active' : ''}`}
+                      onClick={() => setPaymentMethod(method)}
+                    >
+                      {method.charAt(0).toUpperCase() + method.slice(1)}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Totals */}
               <div className="pos-totals">
                 <div className="pos-total-row">
                   <span>Items</span>
@@ -1033,7 +953,6 @@ export default function Pos() {
                 </div>
               </div>
 
-              {/* Pay Button */}
               <button 
                 className="pos-pay-btn" 
                 disabled={cart.length === 0 || processingCheckout}
