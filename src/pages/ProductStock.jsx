@@ -38,7 +38,6 @@ export default function ProductStock() {
   const [editingBatchId, setEditingBatchId] = useState(null);
   const [editQuantity, setEditQuantity] = useState('');
 
-  // Add stock form
   const [addForm, setAddForm] = useState({
     unitName: '',
     quantity: '',
@@ -46,13 +45,11 @@ export default function ProductStock() {
     batchNumber: '',
     supplier: '',
     expiryDate: '',
-    // Loose quantity fields
     useLoose: false,
     looseQuantity: '',
     bundleSize: ''
   });
 
-  // Convert stock form
   const [convertForm, setConvertForm] = useState({
     fromUnit: '',
     toUnit: '',
@@ -129,7 +126,6 @@ export default function ProductStock() {
       return;
     }
 
-    // Validate loose fields
     if (addForm.useLoose) {
       if (!addForm.bundleSize || parseInt(addForm.bundleSize) <= 0) {
         Swal.fire('Error', 'Please enter a valid bundle size (must be greater than 0)', 'error');
@@ -278,7 +274,7 @@ export default function ProductStock() {
   };
 
   // ============================================================
-  // Edit stock quantity - includes loose
+  // Edit stock quantity
   // ============================================================
   const handleEditQuantity = (batchId, currentQuantity) => {
     setEditingBatchId(batchId);
@@ -460,7 +456,7 @@ export default function ProductStock() {
                     <span className="stock-unit-qty">{item.totalQuantity}</span>
                     <span className="stock-unit-label">{item.unit.label}</span>
                     {item.totalLoose > 0 && (
-                      <span className="stock-unit-loose-badge">+{item.totalLoose} loose</span>
+                      <span className="stock-unit-loose-badge">+ {item.totalLoose} loose</span>
                     )}
                   </div>
                   <div className="stock-unit-base">
@@ -497,12 +493,12 @@ export default function ProductStock() {
       {/* All Batches */}
       <div className="product-stock-section">
         <h3>
-          <FontAwesomeIcon icon={faBox} /> All Batch
+          <FontAwesomeIcon icon={faBox} /> All Batches
         </h3>
         <div className="stock-batch-list">
           {stockBatches.length === 0 ? (
             <div className="stock-empty">
-              <p>No batch found</p>
+              <p>No batches found</p>
             </div>
           ) : (
             <table className="stock-batch-table">
@@ -554,7 +550,7 @@ export default function ProductStock() {
                       )}
                     </td>
                     <td>{batch.remainingLoose || 0}</td>
-                    <td>{batch.remainingInBase + (batch.remainingLooseInBase || 0)}</td>
+                    <td>{(batch.remainingInBase || 0) + (batch.remainingLooseInBase || 0)}</td>
                     <td>KES {batch.buyPrice}</td>
                     <td>{batch.supplierName || '—'}</td>
                     <td>{batch.expiryDate ? new Date(batch.expiryDate).toLocaleDateString() : '—'}</td>
@@ -564,7 +560,7 @@ export default function ProductStock() {
                           <button 
                             className="batch-edit-btn"
                             onClick={() => handleEditQuantity(batch._id, batch.remainingQuantity)}
-                            title="Edit quantity"
+                            title="Edit bundles"
                           >
                             <FontAwesomeIcon icon={faEdit} />
                           </button>
@@ -591,7 +587,7 @@ export default function ProductStock() {
         </div>
       </div>
 
-      {/* Add Stock Modal with Loose Quantity */}
+      {/* Add Stock Modal */}
       {showAddForm && (
         <div className="product-stock-modal">
           <div className="product-stock-modal-content">
@@ -619,10 +615,10 @@ export default function ProductStock() {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Quantity *</label>
+                  <label>Bundles *</label>
                   <input
                     type="number"
-                    step="0.01"
+                    step="1"
                     placeholder="0"
                     value={addForm.quantity}
                     onChange={(e) => setAddForm({ ...addForm, quantity: e.target.value })}
@@ -632,7 +628,7 @@ export default function ProductStock() {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Buy Price per Unit *</label>
+                  <label>Buy Price per Bundle *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -672,9 +668,6 @@ export default function ProductStock() {
                 </div>
               </div>
 
-              {/* ============================================================
-              LOOSE QUANTITY SECTION
-              ============================================================ */}
               <div className="form-divider">
                 <hr />
                 <span>Loose Quantity (Optional)</span>
@@ -692,7 +685,7 @@ export default function ProductStock() {
                     Enable Loose Quantity
                   </label>
                   <span className="form-hint">
-                    Use for products sold in bundles with loose units
+                    For products sold in bundles with loose units
                   </span>
                 </div>
               </div>
@@ -705,7 +698,7 @@ export default function ProductStock() {
                       <input
                         type="number"
                         step="1"
-                        placeholder="e.g., 10"
+                        placeholder="e.g., 50"
                         value={addForm.bundleSize}
                         onChange={(e) => setAddForm({ ...addForm, bundleSize: e.target.value })}
                         min="1"
