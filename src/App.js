@@ -25,7 +25,7 @@ import NotFound from './pages/NotFound.jsx';
 import axios from 'axios';
 
 // Axios config
-axios.defaults.baseURL = 'https://hustleguard.onrender.com';
+axios.defaults.baseURL = 'https://hustleguard.onrender.com/api';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 axios.defaults.withCredentials = true;
 
