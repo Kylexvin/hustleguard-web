@@ -4,9 +4,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faArrowLeft, 
-  faSave, 
+import {
+  faArrowLeft,
+  faSave,
   faTag,
   faStore,
   faExclamationTriangle,
@@ -19,10 +19,8 @@ import {
   faInfoCircle,
   faCheckCircle,
   faChevronRight,
-  faGripLines,
-  faShoppingCart,
-  faWarehouse,
-  faBoxes
+  faLayerGroup,
+  faBoxes,
 } from '@fortawesome/free-solid-svg-icons';
 import './css/AddProduct.css';
 
@@ -37,7 +35,7 @@ export default function AddProduct() {
   const [activeStep, setActiveStep] = useState(1);
 
   // ============================================================
-  // Product Data with UOM
+  // Product Data
   // ============================================================
   const [formData, setFormData] = useState({
     name: '',
@@ -57,11 +55,29 @@ export default function AddProduct() {
   // ============================================================
   const [initialStock, setInitialStock] = useState({
     unitName: '',
-    quantity: '',
+    quantity: '',        // Total units (bundles + loose combined)
     buyPrice: '',
     batchNumber: '',
-    supplier: ''
+    supplier: '',
+    expiryDate: '',
+    bundleSize: '',      // Units per bundle
   });
+
+  // ============================================================
+  // Computed: Bundles & Loose from Quantity + Bundle Size
+  // ============================================================
+  const getBundlesAndLoose = useCallback(() => {
+    const qty = parseInt(initialStock.quantity) || 0;
+    const size = parseInt(initialStock.bundleSize) || 0;
+    
+    if (size <= 0) {
+      return { bundles: 0, loose: qty, total: qty };
+    }
+    
+    const bundles = Math.floor(qty / size);
+    const loose = qty % size;
+    return { bundles, loose, total: qty };
+  }, [initialStock.quantity, initialStock.bundleSize]);
 
   // ============================================================
   // UI Helpers
@@ -77,32 +93,26 @@ export default function AddProduct() {
     isActive: true
   });
 
-  const [newSellUnit, setNewSellUnit] = useState(getInitialUnit());
-  const [newStockUnit, setNewStockUnit] = useState(getInitialUnit());
-  const [editingSellUnitIndex, setEditingSellUnitIndex] = useState(null);
-  const [editingStockUnitIndex, setEditingStockUnitIndex] = useState(null);
-  const [showSellForm, setShowSellForm] = useState(false);
-  const [showStockForm, setShowStockForm] = useState(false);
+  const [newUnit, setNewUnit] = useState(getInitialUnit());
+  const [editingUnitIndex, setEditingUnitIndex] = useState(null);
+  const [showUnitForm, setShowUnitForm] = useState(false);
 
   // ============================================================
-  // Steps Configuration (4 steps now)
+  // Steps Configuration
   // ============================================================
   const steps = [
     { id: 1, label: 'Basic Info', icon: faTag },
-    { id: 2, label: 'Sell Units', icon: faShoppingCart },
-    { id: 3, label: 'Stock Units', icon: faWarehouse },
-    { id: 4, label: 'Settings & Stock', icon: faBoxes }
+    { id: 2, label: 'Units & Pricing', icon: faLayerGroup },
+    { id: 3, label: 'Stock & Review', icon: faBoxes }
   ];
 
   const isStepValid = (stepId) => {
-    switch(stepId) {
+    switch (stepId) {
       case 1:
         return formData.name.trim() !== '' && formData.category !== '';
       case 2:
         return formData.sellUnits.length > 0 && formData.sellUnits.some(u => u.isBase);
       case 3:
-        return formData.stockUnits.length > 0 && formData.stockUnits.some(u => u.isBase);
-      case 4:
         return true;
       default:
         return false;
@@ -127,10 +137,10 @@ export default function AddProduct() {
       const response = await axios.get('/products');
       const products = response.data.data || [];
       const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
-      
+
       if (uniqueCategories.length === 0) {
         setCategories([
-          'Electronics', 'Clothing', 'Food', 'Beverages', 
+          'Electronics', 'Clothing', 'Food', 'Beverages',
           'Health', 'Beauty', 'Home', 'Sports', 'Toys', 'Books', 'Other'
         ]);
       } else {
@@ -138,7 +148,7 @@ export default function AddProduct() {
       }
     } catch (err) {
       setCategories([
-        'Electronics', 'Clothing', 'Food', 'Beverages', 
+        'Electronics', 'Clothing', 'Food', 'Beverages',
         'Health', 'Beauty', 'Home', 'Sports', 'Toys', 'Books', 'Other'
       ]);
     }
@@ -153,7 +163,7 @@ export default function AddProduct() {
       setError(null);
       const response = await axios.get(`/products/${id}`);
       const product = response.data.data;
-      
+
       setFormData({
         name: product.name || '',
         description: product.description || '',
@@ -187,9 +197,8 @@ export default function AddProduct() {
     if (!isStepValid(activeStep)) {
       const stepNames = {
         1: 'Please fill in Basic Information',
-        2: 'Please add at least one Sell Unit',
-        3: 'Please add at least one Stock Unit',
-        4: 'Settings are complete'
+        2: 'Please add at least one unit and mark a base unit',
+        3: 'Settings are complete'
       };
       Swal.fire({
         title: 'Complete This Step',
@@ -200,7 +209,7 @@ export default function AddProduct() {
       return;
     }
 
-    if (activeStep < 4) {
+    if (activeStep < 3) {
       setActiveStep(activeStep + 1);
     }
   };
@@ -235,67 +244,102 @@ export default function AddProduct() {
   };
 
   // ============================================================
-  // Sell Units - First unit auto-sets base unit name
+  // Units
   // ============================================================
-  const addSellUnit = () => {
-    if (!newSellUnit.name) {
+  const addUnit = () => {
+    if (!newUnit.name) {
       setError('Unit name is required');
       return;
     }
-    if (newSellUnit.conversion <= 0) {
+    if (newUnit.conversion <= 0) {
       setError('Conversion must be greater than 0');
       return;
     }
 
-    if (formData.sellUnits.some(u => u.name === newSellUnit.name)) {
-      setError(`Unit "${newSellUnit.name}" already exists`);
+    if (formData.sellUnits.some(u => u.name === newUnit.name) && editingUnitIndex === null) {
+      setError(`Unit "${newUnit.name}" already exists`);
       return;
     }
 
-    const isBase = formData.sellUnits.length === 0 ? true : newSellUnit.isBase;
+    const isBase = formData.sellUnits.length === 0 ? true : newUnit.isBase;
+    const buyPrice = isBase ? (newUnit.buyPrice || 0) : 0;
 
-    // If this is the first unit, auto-set the base unit
     if (formData.sellUnits.length === 0) {
       setFormData(prev => ({
         ...prev,
         baseUnit: {
-          name: newSellUnit.name,
-          label: newSellUnit.label || newSellUnit.name
+          name: newUnit.name,
+          label: newUnit.label || newUnit.name
         }
       }));
     }
 
-    if (editingSellUnitIndex !== null) {
-      const updated = [...formData.sellUnits];
-      updated[editingSellUnitIndex] = { ...newSellUnit, isBase };
-      setFormData(prev => ({ ...prev, sellUnits: updated }));
-      setEditingSellUnitIndex(null);
+    const sellEntry = {
+      name: newUnit.name,
+      label: newUnit.label || newUnit.name,
+      conversion: newUnit.conversion,
+      isBase,
+      sellPrice: newUnit.sellPrice || 0,
+      buyPrice,
+      barcode: newUnit.barcode,
+      isActive: true
+    };
+    const stockEntry = {
+      name: newUnit.name,
+      label: newUnit.label || newUnit.name,
+      conversion: newUnit.conversion,
+      isBase,
+      buyPrice,
+      sellPrice: newUnit.sellPrice || 0,
+      barcode: newUnit.barcode,
+      isActive: true
+    };
+
+    if (editingUnitIndex !== null) {
+      const updatedSell = [...formData.sellUnits];
+      const updatedStock = [...formData.stockUnits];
+      updatedSell[editingUnitIndex] = sellEntry;
+      updatedStock[editingUnitIndex] = stockEntry;
+      setFormData(prev => ({ ...prev, sellUnits: updatedSell, stockUnits: updatedStock }));
+      setEditingUnitIndex(null);
     } else {
       setFormData(prev => ({
         ...prev,
-        sellUnits: [...prev.sellUnits, { ...newSellUnit, isBase }]
+        sellUnits: [...prev.sellUnits, sellEntry],
+        stockUnits: [...prev.stockUnits, stockEntry]
       }));
     }
 
-    setNewSellUnit(getInitialUnit());
-    setShowSellForm(false);
+    setNewUnit(getInitialUnit());
+    setShowUnitForm(false);
     setError(null);
     Swal.fire({
       title: 'Unit Added',
-      text: `"${newSellUnit.label || newSellUnit.name}" added to sell units`,
+      text: `"${sellEntry.label}" added — usable for both selling and stocking`,
       icon: 'success',
       timer: 1200,
       showConfirmButton: false
     });
   };
 
-  const editSellUnit = (index) => {
-    setNewSellUnit({ ...formData.sellUnits[index] });
-    setEditingSellUnitIndex(index);
-    setShowSellForm(true);
+  const editUnit = (index) => {
+    const unit = formData.sellUnits[index];
+    const stockUnit = formData.stockUnits[index] || {};
+    setNewUnit({
+      name: unit.name,
+      label: unit.label,
+      conversion: unit.conversion,
+      isBase: unit.isBase,
+      sellPrice: unit.sellPrice || 0,
+      buyPrice: stockUnit.buyPrice || 0,
+      barcode: unit.barcode || '',
+      isActive: true
+    });
+    setEditingUnitIndex(index);
+    setShowUnitForm(true);
   };
 
-  const removeSellUnit = (index) => {
+  const removeUnit = (index) => {
     const unit = formData.sellUnits[index];
     if (unit.isBase) {
       setError('Cannot remove the base unit');
@@ -303,79 +347,7 @@ export default function AddProduct() {
     }
     setFormData(prev => ({
       ...prev,
-      sellUnits: prev.sellUnits.filter((_, i) => i !== index)
-    }));
-  };
-
-  // ============================================================
-  // Stock Units - First unit auto-sets base unit if not already set
-  // ============================================================
-  const addStockUnit = () => {
-    if (!newStockUnit.name) {
-      setError('Unit name is required');
-      return;
-    }
-    if (newStockUnit.conversion <= 0) {
-      setError('Conversion must be greater than 0');
-      return;
-    }
-
-    if (formData.stockUnits.some(u => u.name === newStockUnit.name)) {
-      setError(`Unit "${newStockUnit.name}" already exists`);
-      return;
-    }
-
-    const isBase = formData.stockUnits.length === 0 ? true : newStockUnit.isBase;
-
-    // If base unit is not set, auto-set it from this stock unit
-    if (!formData.baseUnit.name && formData.stockUnits.length === 0) {
-      setFormData(prev => ({
-        ...prev,
-        baseUnit: {
-          name: newStockUnit.name,
-          label: newStockUnit.label || newStockUnit.name
-        }
-      }));
-    }
-
-    if (editingStockUnitIndex !== null) {
-      const updated = [...formData.stockUnits];
-      updated[editingStockUnitIndex] = { ...newStockUnit, isBase };
-      setFormData(prev => ({ ...prev, stockUnits: updated }));
-      setEditingStockUnitIndex(null);
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        stockUnits: [...prev.stockUnits, { ...newStockUnit, isBase }]
-      }));
-    }
-
-    setNewStockUnit(getInitialUnit());
-    setShowStockForm(false);
-    setError(null);
-    Swal.fire({
-      title: 'Unit Added',
-      text: `"${newStockUnit.label || newStockUnit.name}" added to stock units`,
-      icon: 'success',
-      timer: 1200,
-      showConfirmButton: false
-    });
-  };
-
-  const editStockUnit = (index) => {
-    setNewStockUnit({ ...formData.stockUnits[index] });
-    setEditingStockUnitIndex(index);
-    setShowStockForm(true);
-  };
-
-  const removeStockUnit = (index) => {
-    const unit = formData.stockUnits[index];
-    if (unit.isBase) {
-      setError('Cannot remove the base unit');
-      return;
-    }
-    setFormData(prev => ({
-      ...prev,
+      sellUnits: prev.sellUnits.filter((_, i) => i !== index),
       stockUnits: prev.stockUnits.filter((_, i) => i !== index)
     }));
   };
@@ -403,33 +375,20 @@ export default function AddProduct() {
       }
 
       if (!formData.baseUnit.name) {
-        setError('Please add a sell unit first to set the base unit.');
+        setError('Please add a unit first to set the base unit.');
         setLoading(false);
         return;
       }
 
       if (formData.sellUnits.length === 0) {
-        setError('Please add at least one sell unit.');
+        setError('Please add at least one unit.');
         setLoading(false);
         return;
       }
 
-      if (formData.stockUnits.length === 0) {
-        setError('Please add at least one stock unit.');
-        setLoading(false);
-        return;
-      }
-
-      const hasSellBase = formData.sellUnits.some(u => u.isBase);
-      if (!hasSellBase) {
-        setError('Please mark one sell unit as the base unit.');
-        setLoading(false);
-        return;
-      }
-
-      const hasStockBase = formData.stockUnits.some(u => u.isBase);
-      if (!hasStockBase) {
-        setError('Please mark one stock unit as the base unit.');
+      const hasBase = formData.sellUnits.some(u => u.isBase);
+      if (!hasBase) {
+        setError('Please mark one unit as the base unit.');
         setLoading(false);
         return;
       }
@@ -456,7 +415,6 @@ export default function AddProduct() {
         isActive: formData.isActive
       };
 
-      // Legacy fields
       const baseSell = productData.sellUnits.find(u => u.isBase);
       const baseStock = productData.stockUnits.find(u => u.isBase);
       productData.sellingPrice = baseSell?.sellPrice || 0;
@@ -478,24 +436,35 @@ export default function AddProduct() {
 
       const productName = formData.name;
 
-      // --- ADD INITIAL STOCK (if provided) ---
+      // --- ADD INITIAL STOCK ---
       let stockAdded = false;
       let stockMessage = '';
+      const hasQuantity = initialStock.unitName && initialStock.quantity && initialStock.buyPrice;
 
-      if (initialStock.unitName && initialStock.quantity && initialStock.buyPrice) {
+      if (hasQuantity) {
         try {
+          const qty = parseFloat(initialStock.quantity) || 0;
+          const size = parseInt(initialStock.bundleSize) || 0;
+          const loose = qty % size;
+          const bundles = Math.floor(qty / size);
+
           await axios.post(`/products/${productId}/stock`, {
             unitName: initialStock.unitName,
-            quantity: parseFloat(initialStock.quantity),
+            quantity: bundles, // Send bundles
             buyPrice: parseFloat(initialStock.buyPrice),
             batchNumber: initialStock.batchNumber || `INITIAL-${Date.now()}`,
-            supplier: initialStock.supplier || formData.supplier || 'Initial Stock'
+            supplier: initialStock.supplier || formData.supplier || 'Initial Stock',
+            expiryDate: initialStock.expiryDate || null,
+            useLoose: loose > 0,
+            looseQuantity: loose,
+            bundleSize: size
           });
+
           stockAdded = true;
-          stockMessage = `Added ${initialStock.quantity} ${initialStock.unitName} as initial stock.`;
+          stockMessage = `Added ${qty} ${initialStock.unitName} (${bundles} bundles × ${size} + ${loose} loose).`;
         } catch (stockErr) {
           console.warn('Failed to add initial stock:', stockErr);
-          stockMessage = 'Product created, but initial stock failed. Add stock later from the Stock page.';
+          stockMessage = 'Product created, but initial stock failed. Add stock later.';
         }
       } else {
         stockMessage = 'No initial stock added. Add stock later from the Stock page.';
@@ -522,7 +491,6 @@ export default function AddProduct() {
         cancelButtonText: 'View Products'
       }).then((result) => {
         if (!isEditing && result.isConfirmed) {
-          // Reset everything for a new product
           setFormData({
             name: '',
             description: '',
@@ -540,13 +508,13 @@ export default function AddProduct() {
             quantity: '',
             buyPrice: '',
             batchNumber: '',
-            supplier: ''
+            supplier: '',
+            expiryDate: '',
+            bundleSize: '',
           });
-          setNewSellUnit(getInitialUnit());
-          setNewStockUnit(getInitialUnit());
+          setNewUnit(getInitialUnit());
           setActiveStep(1);
-          setShowSellForm(false);
-          setShowStockForm(false);
+          setShowUnitForm(false);
           document.querySelector('input[name="name"]')?.focus();
         } else {
           navigate('/products');
@@ -591,7 +559,7 @@ export default function AddProduct() {
         <div className="add-product-header-spacer"></div>
       </div>
 
-      {/* Progress Steps - Now 4 steps */}
+      {/* Progress Steps */}
       <div className="add-product-steps">
         {steps.map((step) => {
           const status = getStepStatus(step.id);
@@ -638,7 +606,7 @@ export default function AddProduct() {
               <p className="add-product-hint">
                 Tell us about your product. These are the basics.
               </p>
-              
+
               <div className="add-product-field">
                 <label>Product Name *</label>
                 <div className="add-product-input-wrapper">
@@ -684,13 +652,12 @@ export default function AddProduct() {
                 />
               </div>
 
-              {/* Show base unit if already set */}
               {formData.baseUnit.name && (
                 <div className="add-product-base-unit-display">
                   <FontAwesomeIcon icon={faInfoCircle} />
                   <span>
                     Base unit will be: <strong>{formData.baseUnit.label || formData.baseUnit.name}</strong>
-                    {' '}(set automatically from your first sell unit)
+                    {' '}(set automatically from your first unit)
                   </span>
                 </div>
               )}
@@ -705,20 +672,20 @@ export default function AddProduct() {
         )}
 
         {/* ============================================================
-        STEP 2: Sell Units
+        STEP 2: Units & Pricing
         ============================================================ */}
         {activeStep === 2 && (
           <div className="add-product-step-content">
             <div className="add-product-section">
               <h3>
-                <FontAwesomeIcon icon={faShoppingCart} /> Sell Units
+                <FontAwesomeIcon icon={faLayerGroup} /> Units & Pricing
               </h3>
               <p className="add-product-hint">
-                These are the units customers can buy in.
-                <br />The <strong>first unit you add</strong> will set the base unit.
+                Add every unit you sell or stock this product in — e.g. Kilogram, 500ml, Crate.
+                <br />Every unit gets a <strong>sell price</strong>. Only the <strong>base unit</strong> carries a buy price — sub-units convert against it.
+                <br />The <strong>first unit you add</strong> becomes the base unit.
               </p>
 
-              {/* Show current base unit */}
               {formData.baseUnit.name && (
                 <div className="add-product-base-unit-display">
                   <FontAwesomeIcon icon={faCheckCircle} />
@@ -728,55 +695,58 @@ export default function AddProduct() {
                 </div>
               )}
 
-              {/* Existing sell units */}
+              {/* Existing units */}
               <div className="add-product-unit-list">
                 {formData.sellUnits.length === 0 ? (
                   <div className="add-product-unit-empty">
-                    <p>No sell units added yet</p>
+                    <p>No units added yet</p>
                     <span>Click "Add Unit" below to get started</span>
                   </div>
                 ) : (
-                  formData.sellUnits.map((unit, index) => (
-                    <div key={index} className="add-product-unit-item">
-                      <div className="add-product-unit-info">
-                        <span className="add-product-unit-name">
-                          {unit.isBase && <span className="add-product-base-badge">Base</span>}
-                          {unit.label || unit.name}
-                        </span>
-                        <span className="add-product-unit-detail">
-                          {unit.conversion} × {formData.baseUnit.label || formData.baseUnit.name}
-                        </span>
-                        <span className="add-product-unit-price">KES {unit.sellPrice || 0}</span>
-                        {unit.barcode && (
-                          <span className="add-product-unit-barcode">{unit.barcode}</span>
-                        )}
+                  formData.sellUnits.map((unit, index) => {
+                    const stockUnit = formData.stockUnits[index] || {};
+                    return (
+                      <div key={index} className="add-product-unit-item">
+                        <div className="add-product-unit-info">
+                          <span className="add-product-unit-name">
+                            {unit.isBase && <span className="add-product-base-badge">Base</span>}
+                            {unit.label || unit.name}
+                          </span>
+                          <span className="add-product-unit-detail">
+                            {unit.conversion} × {formData.baseUnit.label || formData.baseUnit.name}
+                          </span>
+                          <span className="add-product-unit-price">
+                            {unit.isBase ? `Buy KES ${stockUnit.buyPrice || 0} / ` : ''}Sell KES {unit.sellPrice || 0}
+                          </span>
+                          {unit.barcode && (
+                            <span className="add-product-unit-barcode">{unit.barcode}</span>
+                          )}
+                        </div>
+                        <div className="add-product-unit-actions">
+                          <button type="button" onClick={() => editUnit(index)}>
+                            <FontAwesomeIcon icon={faEdit} />
+                          </button>
+                          <button type="button" onClick={() => removeUnit(index)} disabled={unit.isBase}>
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        </div>
                       </div>
-                      <div className="add-product-unit-actions">
-                        <button type="button" onClick={() => editSellUnit(index)}>
-                          <FontAwesomeIcon icon={faEdit} />
-                        </button>
-                        <button type="button" onClick={() => removeSellUnit(index)} disabled={unit.isBase}>
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 
-              {/* Add Unit Button */}
-              {!showSellForm && (
-                <button type="button" className="add-product-unit-toggle" onClick={() => setShowSellForm(true)}>
-                  <FontAwesomeIcon icon={faPlus} /> Add Sell Unit
+              {!showUnitForm && (
+                <button type="button" className="add-product-unit-toggle" onClick={() => setShowUnitForm(true)}>
+                  <FontAwesomeIcon icon={faPlus} /> Add Unit
                 </button>
               )}
 
-              {/* Add/edit sell unit form */}
-              {showSellForm && (
+              {showUnitForm && (
                 <div className="add-product-unit-form">
                   <div className="add-product-unit-form-header">
-                    <span>{editingSellUnitIndex !== null ? 'Edit Sell Unit' : 'Add Sell Unit'}</span>
-                    <button type="button" onClick={() => { setShowSellForm(false); setEditingSellUnitIndex(null); setNewSellUnit(getInitialUnit()); }}>
+                    <span>{editingUnitIndex !== null ? 'Edit Unit' : 'Add Unit'}</span>
+                    <button type="button" onClick={() => { setShowUnitForm(false); setEditingUnitIndex(null); setNewUnit(getInitialUnit()); }}>
                       <FontAwesomeIcon icon={faTimes} />
                     </button>
                   </div>
@@ -785,18 +755,18 @@ export default function AddProduct() {
                       <label>Unit Name *</label>
                       <input
                         type="text"
-                        placeholder="e.g., kg, 500g, crate"
-                        value={newSellUnit.name}
-                        onChange={(e) => setNewSellUnit({ ...newSellUnit, name: e.target.value })}
+                        placeholder="e.g., kg, 500ml, crate"
+                        value={newUnit.name}
+                        onChange={(e) => setNewUnit({ ...newUnit, name: e.target.value })}
                       />
                     </div>
                     <div className="add-product-field half">
                       <label>Label</label>
                       <input
                         type="text"
-                        placeholder="e.g., Kilogram, 500 Grams"
-                        value={newSellUnit.label}
-                        onChange={(e) => setNewSellUnit({ ...newSellUnit, label: e.target.value })}
+                        placeholder="e.g., Kilogram, Crate (24pc)"
+                        value={newUnit.label}
+                        onChange={(e) => setNewUnit({ ...newUnit, label: e.target.value })}
                       />
                     </div>
                   </div>
@@ -806,51 +776,72 @@ export default function AddProduct() {
                       <input
                         type="number"
                         placeholder="e.g., 1, 0.5, 24"
-                        value={newSellUnit.conversion}
-                        onChange={(e) => setNewSellUnit({ ...newSellUnit, conversion: parseFloat(e.target.value) || 0 })}
+                        value={newUnit.conversion}
+                        onChange={(e) => setNewUnit({ ...newUnit, conversion: parseFloat(e.target.value) || 0 })}
                         min="0.001"
                         step="0.001"
                       />
                     </div>
                     <div className="add-product-field half">
-                      <label>Sell Price (KES)</label>
+                      <label>Barcode</label>
                       <input
-                        type="number"
-                        placeholder="0.00"
-                        value={newSellUnit.sellPrice}
-                        onChange={(e) => setNewSellUnit({ ...newSellUnit, sellPrice: parseFloat(e.target.value) || 0 })}
-                        min="0"
-                        step="0.01"
+                        type="text"
+                        placeholder="Barcode for this unit"
+                        value={newUnit.barcode}
+                        onChange={(e) => setNewUnit({ ...newUnit, barcode: e.target.value })}
                       />
                     </div>
                   </div>
                   <div className="add-product-row">
                     <div className="add-product-field half">
-                      <label>Barcode</label>
+                      <label>Sell Price (KES)</label>
                       <input
-                        type="text"
-                        placeholder="Barcode for this unit"
-                        value={newSellUnit.barcode}
-                        onChange={(e) => setNewSellUnit({ ...newSellUnit, barcode: e.target.value })}
+                        type="number"
+                        placeholder="0.00"
+                        value={newUnit.sellPrice}
+                        onChange={(e) => setNewUnit({ ...newUnit, sellPrice: parseFloat(e.target.value) || 0 })}
+                        min="0"
+                        step="0.01"
                       />
                     </div>
-                    
-                    {/* Is Base Unit - Only show if no units exist yet */}
+                    {(formData.sellUnits.length === 0 || newUnit.isBase) ? (
+                      <div className="add-product-field half">
+                        <label>Buy Price (KES)</label>
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          value={newUnit.buyPrice}
+                          onChange={(e) => setNewUnit({ ...newUnit, buyPrice: parseFloat(e.target.value) || 0 })}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    ) : (
+                      <div className="add-product-field half">
+                        <div className="add-product-unit-base-info">
+                          <FontAwesomeIcon icon={faInfoCircle} />
+                          <span>Buy price set on base unit only</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="add-product-row">
                     {formData.sellUnits.length === 0 ? (
                       <div className="add-product-field half">
                         <label className="add-product-checkbox-label">
                           <input
                             type="checkbox"
-                            checked={newSellUnit.isBase}
+                            checked={newUnit.isBase}
                             onChange={(e) => {
                               const isChecked = e.target.checked;
                               if (isChecked) {
                                 setFormData(prev => ({
                                   ...prev,
-                                  sellUnits: prev.sellUnits.map(u => ({ ...u, isBase: false }))
+                                  sellUnits: prev.sellUnits.map(u => ({ ...u, isBase: false })),
+                                  stockUnits: prev.stockUnits.map(u => ({ ...u, isBase: false }))
                                 }));
                               }
-                              setNewSellUnit({ ...newSellUnit, isBase: isChecked });
+                              setNewUnit({ ...newUnit, isBase: isChecked });
                             }}
                           />
                           This is the base unit
@@ -866,9 +857,9 @@ export default function AddProduct() {
                       </div>
                     )}
                   </div>
-                  <button type="button" className="add-product-unit-add" onClick={addSellUnit}>
-                    <FontAwesomeIcon icon={editingSellUnitIndex !== null ? faCheck : faPlus} />
-                    {editingSellUnitIndex !== null ? 'Update Unit' : 'Add Unit'}
+                  <button type="button" className="add-product-unit-add" onClick={addUnit}>
+                    <FontAwesomeIcon icon={editingUnitIndex !== null ? faCheck : faPlus} />
+                    {editingUnitIndex !== null ? 'Update Unit' : 'Add Unit'}
                   </button>
                 </div>
               )}
@@ -896,210 +887,19 @@ export default function AddProduct() {
         )}
 
         {/* ============================================================
-        STEP 3: Stock Units
+        STEP 3: Settings, Initial Stock, and Review
         ============================================================ */}
         {activeStep === 3 && (
-          <div className="add-product-step-content">
-            <div className="add-product-section">
-              <h3>
-                <FontAwesomeIcon icon={faWarehouse} /> Stock Units
-              </h3>
-              <p className="add-product-hint">
-                These are the units you use for purchasing and stocking.
-                <br />The <strong>first unit you add</strong> will automatically be the base unit.
-              </p>
-
-              {/* Show current base unit */}
-              {formData.baseUnit.name && (
-                <div className="add-product-base-unit-display">
-                  <FontAwesomeIcon icon={faCheckCircle} />
-                  <span>
-                    Base unit: <strong>{formData.baseUnit.label || formData.baseUnit.name}</strong>
-                  </span>
-                </div>
-              )}
-
-              {/* Existing stock units */}
-              <div className="add-product-unit-list">
-                {formData.stockUnits.length === 0 ? (
-                  <div className="add-product-unit-empty">
-                    <p>No stock units added yet</p>
-                    <span>Click "Add Unit" below to get started</span>
-                  </div>
-                ) : (
-                  formData.stockUnits.map((unit, index) => (
-                    <div key={index} className="add-product-unit-item">
-                      <div className="add-product-unit-info">
-                        <span className="add-product-unit-name">
-                          {unit.isBase && <span className="add-product-base-badge">Base</span>}
-                          {unit.label || unit.name}
-                        </span>
-                        <span className="add-product-unit-detail">
-                          {unit.conversion} × {formData.baseUnit.label || formData.baseUnit.name}
-                        </span>
-                        <span className="add-product-unit-price">KES {unit.buyPrice || 0}</span>
-                        {unit.barcode && (
-                          <span className="add-product-unit-barcode">{unit.barcode}</span>
-                        )}
-                      </div>
-                      <div className="add-product-unit-actions">
-                        <button type="button" onClick={() => editStockUnit(index)}>
-                          <FontAwesomeIcon icon={faEdit} />
-                        </button>
-                        <button type="button" onClick={() => removeStockUnit(index)} disabled={unit.isBase}>
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Add Unit Button */}
-              {!showStockForm && (
-                <button type="button" className="add-product-unit-toggle" onClick={() => setShowStockForm(true)}>
-                  <FontAwesomeIcon icon={faPlus} /> Add Stock Unit
-                </button>
-              )}
-
-              {/* Add/edit stock unit form */}
-              {showStockForm && (
-                <div className="add-product-unit-form">
-                  <div className="add-product-unit-form-header">
-                    <span>{editingStockUnitIndex !== null ? 'Edit Stock Unit' : 'Add Stock Unit'}</span>
-                    <button type="button" onClick={() => { setShowStockForm(false); setEditingStockUnitIndex(null); setNewStockUnit(getInitialUnit()); }}>
-                      <FontAwesomeIcon icon={faTimes} />
-                    </button>
-                  </div>
-                  <div className="add-product-row">
-                    <div className="add-product-field half">
-                      <label>Unit Name *</label>
-                      <input
-                        type="text"
-                        placeholder="e.g., kg, sack, crate"
-                        value={newStockUnit.name}
-                        onChange={(e) => setNewStockUnit({ ...newStockUnit, name: e.target.value })}
-                      />
-                    </div>
-                    <div className="add-product-field half">
-                      <label>Label</label>
-                      <input
-                        type="text"
-                        placeholder="e.g., Kilogram, 50kg Sack"
-                        value={newStockUnit.label}
-                        onChange={(e) => setNewStockUnit({ ...newStockUnit, label: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="add-product-row">
-                    <div className="add-product-field half">
-                      <label>Conversion (per base) *</label>
-                      <input
-                        type="number"
-                        placeholder="e.g., 1, 50, 24"
-                        value={newStockUnit.conversion}
-                        onChange={(e) => setNewStockUnit({ ...newStockUnit, conversion: parseFloat(e.target.value) || 0 })}
-                        min="0.001"
-                        step="0.001"
-                      />
-                    </div>
-                    <div className="add-product-field half">
-                      <label>Buy Price (KES)</label>
-                      <input
-                        type="number"
-                        placeholder="0.00"
-                        value={newStockUnit.buyPrice}
-                        onChange={(e) => setNewStockUnit({ ...newStockUnit, buyPrice: parseFloat(e.target.value) || 0 })}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                  </div>
-                  <div className="add-product-row">
-                    <div className="add-product-field half">
-                      <label>Barcode</label>
-                      <input
-                        type="text"
-                        placeholder="Barcode for this unit"
-                        value={newStockUnit.barcode}
-                        onChange={(e) => setNewStockUnit({ ...newStockUnit, barcode: e.target.value })}
-                      />
-                    </div>
-                    
-                    {/* Is Base Unit - Only show if no units exist yet */}
-                    {formData.stockUnits.length === 0 ? (
-                      <div className="add-product-field half">
-                        <label className="add-product-checkbox-label">
-                          <input
-                            type="checkbox"
-                            checked={newStockUnit.isBase}
-                            onChange={(e) => {
-                              const isChecked = e.target.checked;
-                              if (isChecked) {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  stockUnits: prev.stockUnits.map(u => ({ ...u, isBase: false }))
-                                }));
-                              }
-                              setNewStockUnit({ ...newStockUnit, isBase: isChecked });
-                            }}
-                          />
-                          This is the base unit
-                          <span className="add-product-label-hint">(Required)</span>
-                        </label>
-                      </div>
-                    ) : (
-                      <div className="add-product-field half">
-                        <div className="add-product-unit-base-info">
-                          <FontAwesomeIcon icon={faInfoCircle} />
-                          <span>Base unit already set</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <button type="button" className="add-product-unit-add" onClick={addStockUnit}>
-                    <FontAwesomeIcon icon={editingStockUnitIndex !== null ? faCheck : faPlus} />
-                    {editingStockUnitIndex !== null ? 'Update Unit' : 'Add Unit'}
-                  </button>
-                </div>
-              )}
-
-              {formData.stockUnits.length > 0 && (
-                <div className="add-product-unit-summary">
-                  <FontAwesomeIcon icon={faInfoCircle} />
-                  <span>
-                    {formData.stockUnits.length} unit{formData.stockUnits.length > 1 ? 's' : ''} added.
-                    {formData.stockUnits.some(u => u.isBase) ? ' Base unit marked.' : ' Please mark a base unit.'}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="add-product-nav">
-              <button type="button" className="add-product-nav-prev" onClick={prevStep}>
-                <FontAwesomeIcon icon={faChevronRight} style={{ transform: 'rotate(180deg)' }} /> Back
-              </button>
-              <button type="button" className="add-product-nav-next" onClick={nextStep}>
-                Next <FontAwesomeIcon icon={faChevronRight} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ============================================================
-        STEP 4: Settings & Initial Stock
-        ============================================================ */}
-        {activeStep === 4 && (
           <div className="add-product-step-content">
             {/* Settings Section */}
             <div className="add-product-section">
               <h3>
-                <FontAwesomeIcon icon={faGripLines} /> Settings
+                <FontAwesomeIcon icon={faExclamationTriangle} /> Settings
               </h3>
               <p className="add-product-hint">
                 Set your stock alert level and supplier info.
               </p>
-              
+
               <div className="add-product-row">
                 <div className="add-product-field half">
                   <label>Min Stock Alert</label>
@@ -1141,18 +941,20 @@ export default function AddProduct() {
               </div>
             </div>
 
-            {/* Initial Stock Section */}
+            {/* ============================================================
+            INITIAL STOCK SECTION
+            ============================================================ */}
             <div className="add-product-section">
               <h3>
                 <FontAwesomeIcon icon={faBoxes} /> Initial Stock (Optional)
               </h3>
               <p className="add-product-hint">
-                Add starting stock for this product. You can skip this and add stock later from the Stock page.
+                Add starting stock right now — skip if you'd rather add stock later.
               </p>
-              
+
               <div className="add-product-row">
                 <div className="add-product-field half">
-                  <label>Unit</label>
+                  <label>Unit *</label>
                   <select
                     name="unitName"
                     value={initialStock.unitName}
@@ -1161,28 +963,29 @@ export default function AddProduct() {
                     <option value="">Select unit</option>
                     {formData.stockUnits.map((unit) => (
                       <option key={unit.name} value={unit.name}>
-                        {unit.label} ({unit.conversion} × {formData.baseUnit.label})
+                        {unit.label}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div className="add-product-field half">
-                  <label>Quantity</label>
+                  <label>Total Units *</label>
                   <input
                     type="number"
                     name="quantity"
-                    step="0.01"
-                    placeholder="0"
+                    step="1"
+                    placeholder="e.g., 33"
                     value={initialStock.quantity}
                     onChange={handleInitialStockChange}
                     min="0"
                   />
+                  <span className="add-product-hint small">Total units (bundles + loose combined)</span>
                 </div>
               </div>
 
               <div className="add-product-row">
                 <div className="add-product-field half">
-                  <label>Buy Price (per unit)</label>
+                  <label>Buy Price per Unit *</label>
                   <input
                     type="number"
                     name="buyPrice"
@@ -1205,30 +1008,105 @@ export default function AddProduct() {
                 </div>
               </div>
 
-              <div className="add-product-field">
-                <label>Supplier (for this batch)</label>
-                <input
-                  type="text"
-                  name="supplier"
-                  placeholder="Supplier name (optional)"
-                  value={initialStock.supplier}
-                  onChange={handleInitialStockChange}
-                />
+              <div className="add-product-row">
+                <div className="add-product-field half">
+                  <label>Supplier</label>
+                  <input
+                    type="text"
+                    name="supplier"
+                    placeholder="Supplier name"
+                    value={initialStock.supplier}
+                    onChange={handleInitialStockChange}
+                  />
+                </div>
+                <div className="add-product-field half">
+                  <label>Expiry Date</label>
+                  <input
+                    type="date"
+                    name="expiryDate"
+                    value={initialStock.expiryDate}
+                    onChange={handleInitialStockChange}
+                  />
+                </div>
               </div>
 
-              {initialStock.unitName && initialStock.quantity && initialStock.buyPrice ? (
-                <div className="add-product-initial-stock-summary">
-                  <FontAwesomeIcon icon={faCheckCircle} />
-                  <span>
-                    Will add <strong>{initialStock.quantity} {initialStock.unitName}</strong> 
-                    {' '}at KES {parseFloat(initialStock.buyPrice).toFixed(2)} per unit
-                    {initialStock.batchNumber ? ` (Batch: ${initialStock.batchNumber})` : ''}
-                  </span>
+              {/* Bundles / Loose Section */}
+              <div className="add-product-divider">
+                <span>Bundle Breakdown</span>
+              </div>
+
+              <div className="add-product-row">
+                <div className="add-product-field half">
+                  <label>Bundle / Crate Size</label>
+                  <input
+                    type="number"
+                    name="bundleSize"
+                    step="1"
+                    placeholder="e.g., 10"
+                    value={initialStock.bundleSize}
+                    onChange={handleInitialStockChange}
+                    min="0"
+                  />
+                  <span className="add-product-hint small">How many units make 1 bundle/crate?</span>
                 </div>
-              ) : (
-                <div className="add-product-initial-stock-skip">
+                <div className="add-product-field half">
+                  <label>&nbsp;</label>
+                  <div className="add-product-bundle-preview">
+                    {initialStock.quantity && initialStock.bundleSize ? (
+                      <>
+                        <span className="bundle-preview-bundles">
+                          {getBundlesAndLoose().bundles} bundles
+                        </span>
+                        <span className="bundle-preview-loose">
+                          + {getBundlesAndLoose().loose} loose
+                        </span>
+                        <span className="bundle-preview-total">
+                          = {getBundlesAndLoose().total} total
+                        </span>
+                      </>
+                    ) : (
+                      <span className="bundle-preview-empty">Enter quantity & size to preview</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Stock Summary */}
+              {initialStock.unitName && (initialStock.quantity || initialStock.looseQuantity) && (
+                <div className="add-product-stock-summary">
+                  <div className="stock-summary-row">
+                    <span className="stock-summary-label">Bundles:</span>
+                    <span className="stock-summary-value">
+                      {getBundlesAndLoose().bundles} × {initialStock.bundleSize || 0} = {getBundlesAndLoose().bundles * (parseInt(initialStock.bundleSize) || 0)} {initialStock.unitName}
+                    </span>
+                  </div>
+                  {getBundlesAndLoose().loose > 0 && (
+                    <div className="stock-summary-row">
+                      <span className="stock-summary-label">Loose:</span>
+                      <span className="stock-summary-value">+ {getBundlesAndLoose().loose} {initialStock.unitName}</span>
+                    </div>
+                  )}
+                  <div className="stock-summary-row total">
+                    <span className="stock-summary-label">Total:</span>
+                    <span className="stock-summary-value">
+                      {getBundlesAndLoose().total} {initialStock.unitName}
+                    </span>
+                  </div>
+                  {initialStock.buyPrice && (
+                    <div className="stock-summary-row">
+                      <span className="stock-summary-label">Total Cost:</span>
+                      <span className="stock-summary-value">
+                        KES {getBundlesAndLoose().total * parseFloat(initialStock.buyPrice || 0)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!initialStock.unitName && !initialStock.quantity && (
+                <div className="add-product-no-stock">
                   <FontAwesomeIcon icon={faInfoCircle} />
-                  <span>No initial stock will be added. You can add stock later.</span>
+                  <span>No stock will be added. Add stock later from the Stock page.</span>
                 </div>
               )}
             </div>
@@ -1250,12 +1128,8 @@ export default function AddProduct() {
                   <span className="review-value">{formData.baseUnit.label || formData.baseUnit.name || '—'}</span>
                 </div>
                 <div className="add-product-review-item">
-                  <span className="review-label">Sell Units</span>
+                  <span className="review-label">Units</span>
                   <span className="review-value">{formData.sellUnits.length}</span>
-                </div>
-                <div className="add-product-review-item">
-                  <span className="review-label">Stock Units</span>
-                  <span className="review-value">{formData.stockUnits.length}</span>
                 </div>
                 <div className="add-product-review-item">
                   <span className="review-label">Min Alert</span>
@@ -1264,10 +1138,15 @@ export default function AddProduct() {
                 <div className="add-product-review-item">
                   <span className="review-label">Initial Stock</span>
                   <span className="review-value">
-                    {initialStock.unitName && initialStock.quantity ? 
-                      `${initialStock.quantity} ${initialStock.unitName}` : 
+                    {initialStock.unitName && initialStock.quantity ? (
+                      <>
+                        {getBundlesAndLoose().total} {initialStock.unitName}
+                        {initialStock.bundleSize > 0 && ` (${getBundlesAndLoose().bundles} bundles × ${initialStock.bundleSize})`}
+                        {getBundlesAndLoose().loose > 0 && ` + ${getBundlesAndLoose().loose} loose`}
+                      </>
+                    ) : (
                       'None'
-                    }
+                    )}
                   </span>
                 </div>
               </div>
