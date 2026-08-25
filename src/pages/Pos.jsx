@@ -1,4 +1,3 @@
-// src/pages/Pos.jsx
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Search,
@@ -13,7 +12,9 @@ import {
   MicOff,
   Volume2,
   LoaderCircle,
-  TriangleAlert
+  TriangleAlert,
+  PackageX,
+  ChevronDown
 } from 'lucide-react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
@@ -36,6 +37,7 @@ export default function Pos() {
   const [processingCheckout, setProcessingCheckout] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState('');
   const [barcodeError, setBarcodeError] = useState(null);
+  const [expandedProducts, setExpandedProducts] = useState({});
 
   const recognitionRef = useRef(null);
   const timeoutRef = useRef(null);
@@ -46,6 +48,10 @@ export default function Pos() {
   useEffect(() => {
     cartRef.current = cart;
   }, [cart]);
+
+  const toggleExpand = useCallback((productId) => {
+    setExpandedProducts(prev => ({ ...prev, [productId]: !prev[productId] }));
+  }, []);
 
   // ============================================================
   // UOM: Get best sell unit for a product
@@ -363,7 +369,7 @@ export default function Pos() {
       `,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
+      confirmButtonColor: '#1a7f4e',
       cancelButtonColor: '#d33',
       confirmButtonText: 'Complete Sale',
       cancelButtonText: 'Cancel'
@@ -625,24 +631,19 @@ export default function Pos() {
         toastOptions={{
           duration: 3000,
           style: {
-            background: '#363636',
-            color: '#fff',
-            borderRadius: '8px',
+            background: '#0f2419',
+            color: '#eafff3',
+            borderRadius: '10px',
             padding: '12px 16px',
+            border: '1px solid #1e4030'
           },
           success: {
             duration: 3000,
-            iconTheme: {
-              primary: '#4ade80',
-              secondary: '#fff',
-            },
+            iconTheme: { primary: '#34d399', secondary: '#0f2419' },
           },
           error: {
             duration: 4000,
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
+            iconTheme: { primary: '#f87171', secondary: '#0f2419' },
           },
         }}
       />
@@ -650,27 +651,28 @@ export default function Pos() {
       <div className="pos-container">
         {/* Left Column - Products */}
         <div className="pos-left">
-          {/* Header */}
           <div className="pos-header">
-            <div className="pos-header-left">
-              <h2>POS</h2>
-            </div>
-            <div className="pos-header-right">
-              <span className="pos-item-count">{itemCount} items</span>
-            </div>
+            <h2>Point of Sale</h2>
+            <span className="pos-item-count">{itemCount} item{itemCount !== 1 ? 's' : ''} selected</span>
           </div>
 
-          {/* Search & Barcode */}
-          <div className="pos-search">
-            <Search className="pos-search-icon" size={18} />
-            <input
-              type="text"
-              placeholder="Search products by name, barcode..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              autoFocus
-            />
-            
+          <div className="pos-search-bar">
+            <div className="pos-search">
+              <Search className="pos-search-icon" size={18} />
+              <input
+                type="text"
+                placeholder="Search products by name, barcode..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                autoFocus
+              />
+              {search && (
+                <button className="pos-search-clear" onClick={() => setSearch('')}>
+                  <X size={15} />
+                </button>
+              )}
+            </div>
+
             <form onSubmit={handleBarcodeSubmit} style={{ display: 'none' }}>
               <input
                 type="text"
@@ -679,267 +681,251 @@ export default function Pos() {
                 id="barcode-scanner"
               />
             </form>
-            
-            <button 
-              className="pos-scan-btn" 
+
+            <button
+              className="pos-icon-btn"
               title="Scan barcode"
               onClick={() => document.getElementById('barcode-scanner')?.focus()}
             >
               <QrCode size={18} />
             </button>
-            
-            <button 
-              className={`pos-voice-btn ${isListening ? 'listening' : ''}`}
+
+            <button
+              className={`pos-icon-btn pos-voice-btn ${isListening ? 'listening' : ''}`}
               onClick={toggleListening}
               title={isListening ? 'Stop listening' : 'Start voice ordering'}
             >
               {isListening ? <MicOff size={18} /> : <Mic size={18} />}
-              {isListening && <span className="pos-voice-pulse"></span>}
+              {isListening && <span className="pos-voice-pulse" />}
             </button>
-            
-            {search && (
-              <button className="pos-search-clear" onClick={() => setSearch('')}>
-                <X size={16} />
-              </button>
-            )}
           </div>
 
-          {/* Barcode error */}
           {barcodeError && (
-            <div className="pos-barcode-error">
-              <TriangleAlert size={16} />
+            <div className="pos-inline-alert error">
+              <TriangleAlert size={15} />
               <span>{barcodeError}</span>
             </div>
           )}
 
-          {/* Voice Status */}
           {isListening && (
             <div className="pos-voice-status">
               <div className="pos-voice-indicator">
-                <span className={`pos-voice-dot ${voiceStatus}`}></span>
-                <span className="pos-voice-text">
-                  {voiceStatus === 'listening' && 'Listening... Speak product name'}
+                <span className={`pos-voice-dot ${voiceStatus}`} />
+                <span>
+                  {voiceStatus === 'listening' && 'Listening... say a product name'}
                   {voiceStatus === 'confirmed' && 'Added to cart!'}
                   {voiceStatus === 'idle' && 'Ready...'}
                 </span>
               </div>
               {voiceTranscript && (
                 <div className="pos-voice-transcript">
-                  <Volume2 size={14} />
-                  <span>"{voiceTranscript}"</span>
+                  <Volume2 size={13} />
+                  <span>{voiceTranscript}</span>
                 </div>
               )}
             </div>
           )}
 
-          {/* Voice Help */}
           {!isListening && (
             <div className="pos-voice-help">
-              <Mic size={14} />
-              <span>Click mic to order by voice</span>
-              <button className="pos-voice-help-toggle" onClick={() => {
-                Swal.fire({
-                  title: 'Voice Commands',
-                  html: `
-                    <ul style="text-align: left;">
-                      ${voiceCommands.map(cmd => `<li>${cmd}</li>`).join('')}
-                    </ul>
-                  `,
-                  icon: 'info',
-                  confirmButtonText: 'Got it'
-                });
-              }}>
+              <Mic size={13} />
+              <span>Click the mic to order by voice</span>
+              <button
+                className="pos-voice-help-toggle"
+                onClick={() => {
+                  Swal.fire({
+                    title: 'Voice Commands',
+                    html: `<ul style="text-align:left;">${voiceCommands.map(c => `<li>${c}</li>`).join('')}</ul>`,
+                    icon: 'info',
+                    confirmButtonText: 'Got it',
+                    confirmButtonColor: '#1a7f4e'
+                  });
+                }}
+              >
                 ?
               </button>
             </div>
           )}
 
-          {/* Loading/Error States */}
-          {loadingInitial ? (
-            <div className="pos-loading">
-              <LoaderCircle className="spin" size={24} />
-              <span>Loading products...</span>
-            </div>
-          ) : searching ? (
-            <div className="pos-loading">
-              <LoaderCircle className="spin" size={24} />
-              <span>Searching...</span>
-            </div>
-          ) : error ? (
-            <div className="pos-error">
-              <TriangleAlert size={20} />
-              <span>{error}</span>
-              <button onClick={() => setError(null)}>Dismiss</button>
-            </div>
-          ) : null}
+          <div className="pos-products-scroll">
+            {loadingInitial ? (
+              <div className="pos-status-block">
+                <LoaderCircle className="spin" size={26} />
+                <span>Loading products...</span>
+              </div>
+            ) : searching ? (
+              <div className="pos-status-block">
+                <LoaderCircle className="spin" size={26} />
+                <span>Searching...</span>
+              </div>
+            ) : error ? (
+              <div className="pos-status-block error">
+                <TriangleAlert size={22} />
+                <span>{error}</span>
+                <button onClick={() => setError(null)}>Dismiss</button>
+              </div>
+            ) : products.length === 0 ? (
+              <div className="pos-status-block">
+                <PackageX size={26} />
+                <span>No products available</span>
+                <small>Add products from the Products page</small>
+              </div>
+            ) : (
+              <div className="pos-product-grid">
+                {products.map((product) => {
+                  const bestUnit = getBestSellUnit(product);
+                  const isOutOfStock = product.totalStock <= 0;
 
-          {/* Product Grid */}
-          <div className="pos-products">
-            {!loadingInitial && !searching && products.length === 0 && (
-              <div className="pos-empty">
-                <p>No products available</p>
-                <span>Add products from the Products page</span>
+                  const units = product.sellUnits && product.sellUnits.length > 0
+                    ? product.sellUnits
+                    : [{ ...bestUnit }];
+                  const baseUnit = units.find(u => u.isBase) || units[0];
+                  const otherUnits = units.filter(u => u !== baseUnit && u.name !== baseUnit.name);
+                  const isExpanded = expandedProducts[product.productId];
+
+                  const renderUnitBtn = (unit) => {
+                    const availableInUnit = product.totalStock / unit.conversion;
+                    const isAvailable = availableInUnit >= 1;
+                    const price = unit.sellPrice || product.price || 0;
+
+                    return (
+                      <button
+                        key={unit.name}
+                        className={`pos-unit ${unit.isBase ? 'base' : ''} ${!isAvailable || isOutOfStock ? 'disabled' : ''}`}
+                        onClick={() => {
+                          if (!isAvailable || isOutOfStock) {
+                            toast.error(`Only ${Math.floor(availableInUnit)} ${unit.label} available`);
+                            return;
+                          }
+                          addToCart(product, unit.name, 1);
+                        }}
+                        disabled={!isAvailable || isOutOfStock}
+                      >
+                        <span className="pos-unit-label">{unit.label}</span>
+                        <span className="pos-unit-price">KES {price}</span>
+                      </button>
+                    );
+                  };
+
+                  return (
+                    <div
+                      key={product.productId}
+                      className={`pos-card ${isOutOfStock ? 'out' : ''}`}
+                    >
+                      <div className="pos-card-top">
+                        <h4>{product.productName}</h4>
+                        <span className={`pos-stock-pill ${product.isLowStock ? 'low' : ''} ${isOutOfStock ? 'out' : ''}`}>
+                          {product.totalStock} {product.baseUnit?.label || 'units'}
+                        </span>
+                      </div>
+
+                      <div className="pos-card-units">
+                        <div className="pos-unit-row">
+                          {renderUnitBtn(baseUnit)}
+                          {otherUnits.length > 0 && (
+                            <button
+                              className={`pos-unit-toggle ${isExpanded ? 'open' : ''}`}
+                              onClick={() => toggleExpand(product.productId)}
+                              title="More units"
+                            >
+                              <ChevronDown size={14} />
+                            </button>
+                          )}
+                        </div>
+                        {isExpanded && otherUnits.length > 0 && (
+                          <div className="pos-unit-more">
+                            {otherUnits.map(renderUnitBtn)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
-            {products.map((product) => {
-              const bestUnit = getBestSellUnit(product);
-              const isOutOfStock = product.totalStock <= 0;
-              
-              return (
-                <div key={product.productId} className="pos-product-card">
-                  <div className="pos-product-info">
-                    <div className="pos-product-header">
-                      <h4>{product.productName}</h4>
-                      <span className={`pos-product-stock ${product.isLowStock ? 'low' : ''} ${isOutOfStock ? 'out' : ''}`}>
-                        {product.totalStock} {product.baseUnit?.label || 'units'}
-                      </span>
-                    </div>
-                    
-                    {/* Unit Buttons */}
-                    <div className="pos-unit-buttons">
-                      {product.sellUnits && product.sellUnits.length > 0 ? (
-                        product.sellUnits.map(unit => {
-                          const availableInUnit = product.totalStock / unit.conversion;
-                          const isAvailable = availableInUnit >= 1;
-                          const price = unit.sellPrice || 0;
-                          
-                          return (
-                            <button
-                              key={unit.name}
-                              className={`pos-unit-btn ${unit.isBase ? 'base' : ''} ${!isAvailable || isOutOfStock ? 'disabled' : ''}`}
-                              onClick={() => {
-                                if (!isAvailable || isOutOfStock) {
-                                  toast.error(`Only ${Math.floor(availableInUnit)} ${unit.label} available`);
-                                  return;
-                                }
-                                addToCart(product, unit.name, 1);
-                              }}
-                              disabled={!isAvailable || isOutOfStock}
-                            >
-                              <span className="pos-unit-label-text">{unit.label}</span>
-                              <span className="pos-unit-price-text">KES {price}</span>
-                              {unit.isBase && <span className="pos-unit-badge">Base</span>}
-                            </button>
-                          );
-                        })
-                      ) : (
-                        <button 
-                          className="pos-unit-btn base"
-                          onClick={() => {
-                            if (!isOutOfStock) {
-                              addToCart(product, bestUnit.name, 1);
-                            }
-                          }}
-                          disabled={isOutOfStock}
-                        >
-                          <span className="pos-unit-label-text">{bestUnit.label}</span>
-                          <span className="pos-unit-price-text">KES {bestUnit.sellPrice || product.price || 0}</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
 
         {/* Right Column - Cart & Checkout */}
         <div className="pos-right">
           <div className="pos-cart">
-            {/* Cart Header */}
             <div className="pos-cart-header">
-              <h3>
-                <ShoppingCart size={18} /> Cart
-              </h3>
+              <h3><ShoppingCart size={17} /> Cart</h3>
               <span className="pos-cart-count">{itemCount} units</span>
             </div>
 
-            {/* Cart Items */}
             <div className="pos-cart-items">
               {cart.length === 0 ? (
                 <div className="pos-empty-cart">
-                  <ShoppingCart size={32} />
+                  <ShoppingCart size={30} />
                   <p>No items in cart</p>
                   <span>Search, scan, or tap a unit to add</span>
                 </div>
               ) : (
                 cart.map((item, index) => (
                   <div key={`${item.productId}-${item.unitName}-${index}`} className="pos-cart-item">
-                    <div className="pos-cart-item-info">
+                    <div className="pos-cart-item-top">
                       <span className="pos-cart-item-name">
                         {item.productName}
-                        <span className="pos-cart-item-unit">({item.unitLabel})</span>
+                        <span className="pos-cart-item-unit">{item.unitLabel}</span>
                       </span>
-                      <span className="pos-cart-item-price">KES {item.price}</span>
-                    </div>
-                    <div className="pos-cart-item-actions">
-                      <button 
-                        className="pos-qty-btn minus"
-                        onClick={() => updateQuantity(item.productId, item.unitName, -1)}
-                        disabled={item.quantity <= 1}
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span className="pos-cart-item-qty">{item.quantity}</span>
-                      <button 
-                        className="pos-qty-btn plus"
-                        onClick={() => updateQuantity(item.productId, item.unitName, 1)}
-                        disabled={item.quantity >= item.maxQuantity}
-                      >
-                        <Plus size={14} />
-                      </button>
-                      <button 
-                        className="pos-cart-remove"
-                        onClick={() => removeFromCart(item.productId, item.unitName)}
-                      >
+                      <button className="pos-cart-remove" onClick={() => removeFromCart(item.productId, item.unitName)}>
                         <Trash2 size={14} />
                       </button>
                     </div>
-                    <div className="pos-cart-item-base">
-                      <span className="pos-cart-item-conversion">
-                        {item.quantityInBase} {item.baseUnit?.label || 'units'}
-                      </span>
-                      <span className="pos-cart-item-total">
-                        KES {item.totalPrice.toFixed(2)}
-                      </span>
+                    <div className="pos-cart-item-bottom">
+                      <div className="pos-qty-group">
+                        <button
+                          className="pos-qty-btn"
+                          onClick={() => updateQuantity(item.productId, item.unitName, -1)}
+                          disabled={item.quantity <= 1}
+                        >
+                          <Minus size={13} />
+                        </button>
+                        <span>{item.quantity}</span>
+                        <button
+                          className="pos-qty-btn"
+                          onClick={() => updateQuantity(item.productId, item.unitName, 1)}
+                          disabled={item.quantity >= item.maxQuantity}
+                        >
+                          <Plus size={13} />
+                        </button>
+                      </div>
+                      <span className="pos-cart-item-total">KES {item.totalPrice.toFixed(2)}</span>
                     </div>
                   </div>
                 ))
               )}
             </div>
 
-            {/* Checkout */}
             <div className="pos-checkout">
-              <div className="pos-checkout-row customer-row">
+              <div className="pos-checkout-row">
                 <input
                   type="text"
                   placeholder="Customer name (optional)"
                   value={customer}
                   onChange={(e) => setCustomer(e.target.value)}
-                  className="pos-customer-input"
+                  className="pos-input"
                 />
                 <input
                   type="text"
                   placeholder="Phone (optional)"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="pos-customer-input"
+                  className="pos-input"
                 />
               </div>
 
-              <div className="pos-checkout-row">
-                <div className="pos-payment-methods">
-                  {['cash', 'mpesa', 'bank', 'credit'].map((method) => (
-                    <button
-                      key={method}
-                      className={`pos-payment-btn ${paymentMethod === method ? 'active' : ''}`}
-                      onClick={() => setPaymentMethod(method)}
-                    >
-                      {method.charAt(0).toUpperCase() + method.slice(1)}
-                    </button>
-                  ))}
-                </div>
+              <div className="pos-payment-methods">
+                {['cash', 'mpesa', 'bank', 'credit'].map((method) => (
+                  <button
+                    key={method}
+                    className={`pos-payment-btn ${paymentMethod === method ? 'active' : ''}`}
+                    onClick={() => setPaymentMethod(method)}
+                  >
+                    {method.charAt(0).toUpperCase() + method.slice(1)}
+                  </button>
+                ))}
               </div>
 
               <div className="pos-totals">
@@ -953,20 +939,15 @@ export default function Pos() {
                 </div>
               </div>
 
-              <button 
-                className="pos-pay-btn" 
+              <button
+                className="pos-pay-btn"
                 disabled={cart.length === 0 || processingCheckout}
                 onClick={handleCheckout}
               >
                 {processingCheckout ? (
-                  <>
-                    <LoaderCircle className="spin" size={18} /> Processing...
-                  </>
+                  <><LoaderCircle className="spin" size={18} /> Processing...</>
                 ) : (
-                  <>
-                    <CreditCard size={18} /> 
-                    Pay KES {total.toFixed(2)}
-                  </>
+                  <><CreditCard size={18} /> Pay KES {total.toFixed(2)}</>
                 )}
               </button>
             </div>

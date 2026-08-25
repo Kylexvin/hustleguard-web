@@ -654,3 +654,96 @@
   background: #E8F1EC;
   color: #1B4D3D;
 }
+/* ============================================================
+   LOOSE QUANTITY STYLES
+   ============================================================ */
+
+/* Form divider */
+.form-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.form-divider hr {
+  flex: 1;
+  border: none;
+  border-top: 1.5px solid #E8ECF0;
+}
+
+.form-divider span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #95A5A6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Form hint text */
+.form-hint {
+  display: block;
+  font-size: 11px;
+  color: #95A5A6;
+  margin-top: 2px;
+}
+
+/* Info box */
+.form-info-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #F8FAFB;
+  border-radius: 6px;
+  border-left: 3px solid #1B4D3D;
+  font-size: 13px;
+  color: #1A1A2E;
+  margin-bottom: 10px;
+}
+
+.form-info-box svg {
+  color: #1B4D3D;
+}
+
+/* Stock unit loose badge */
+.stock-unit-loose-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #B7791F;
+  background: #FBF1DE;
+  padding: 1px 8px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
+.stock-unit-loose-base {
+  font-size: 11px;
+  color: #95A5A6;
+}
+
+/* Batch mini loose */
+.batch-loose {
+  font-size: 10px;
+  color: #B7791F;
+  font-weight: 500;
+}
+
+.batch-bundle-size {
+  font-size: 9px;
+  color: #95A5A6;
+  background: #F0F2F1;
+  padding: 0 6px;
+  border-radius: 3px;
+  margin-left: 4px;
+}
+
+/* Checkbox inline with label */
+.form-group label input[type="checkbox"] {
+  margin-right: 6px;
+  accent-color: #1B4D3D;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
