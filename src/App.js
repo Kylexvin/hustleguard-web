@@ -22,6 +22,7 @@ import Reports from './pages/Reports';
 import ProductStock from './pages/ProductStock.jsx';
 import SaleDetails from './pages/SaleDetails.jsx';
 import NotFound from './pages/NotFound.jsx';
+import Categories from './pages/Categories';
 import axios from 'axios';
 
 // Axios config
@@ -93,6 +94,7 @@ function AppRoutes() {
         <Route path="reports" element={<Reports />} />
         <Route path="pos" element={isMobile ? <MobilePos /> : <Pos />} />
         <Route path="sales" element={<Sales />} />
+        <Route path="/categories" element={<Categories />} />
         <Route path="/sales/:invoiceNumber" element={<SaleDetails />} />
         <Route path="*" element={<NotFound />} />
         <Route path="alerts" element={<Alerts />} />

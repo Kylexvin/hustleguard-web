@@ -21,6 +21,7 @@ import {
   faChevronRight,
   faLayerGroup,
   faBoxes,
+  faPlusCircle,
 } from '@fortawesome/free-solid-svg-icons';
 import './css/AddProduct.css';
 
@@ -33,6 +34,7 @@ export default function AddProduct() {
   const [error, setError] = useState(null);
   const [categories, setCategories] = useState([]);
   const [activeStep, setActiveStep] = useState(1);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   // ============================================================
   // Product Data
@@ -55,12 +57,12 @@ export default function AddProduct() {
   // ============================================================
   const [initialStock, setInitialStock] = useState({
     unitName: '',
-    quantity: '',        // Total units (bundles + loose combined)
+    quantity: '',
     buyPrice: '',
     batchNumber: '',
     supplier: '',
     expiryDate: '',
-    bundleSize: '',      // Units per bundle
+    bundleSize: '',
   });
 
   // ============================================================
@@ -69,11 +71,11 @@ export default function AddProduct() {
   const getBundlesAndLoose = useCallback(() => {
     const qty = parseInt(initialStock.quantity) || 0;
     const size = parseInt(initialStock.bundleSize) || 0;
-    
+
     if (size <= 0) {
       return { bundles: 0, loose: qty, total: qty };
     }
-    
+
     const bundles = Math.floor(qty / size);
     const loose = qty % size;
     return { bundles, loose, total: qty };
@@ -126,33 +128,28 @@ export default function AddProduct() {
   };
 
   // ============================================================
-  // Fetch categories
+  // Fetch categories from Categories API
   // ============================================================
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
-      const response = await axios.get('/products');
-      const products = response.data.data || [];
-      const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
-
-      if (uniqueCategories.length === 0) {
-        setCategories([
-          'Electronics', 'Clothing', 'Food', 'Beverages',
-          'Health', 'Beauty', 'Home', 'Sports', 'Toys', 'Books', 'Other'
-        ]);
-      } else {
-        setCategories(uniqueCategories);
-      }
+      setLoadingCategories(true);
+      const response = await axios.get('/categories');
+      const categoryNames = response.data.data.map(c => c.name) || [];
+      setCategories(categoryNames);
     } catch (err) {
+      // Fallback to hardcoded if API fails
       setCategories([
         'Electronics', 'Clothing', 'Food', 'Beverages',
         'Health', 'Beauty', 'Home', 'Sports', 'Toys', 'Books', 'Other'
       ]);
+    } finally {
+      setLoadingCategories(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   // ============================================================
   // Fetch product for editing
@@ -450,7 +447,7 @@ export default function AddProduct() {
 
           await axios.post(`/products/${productId}/stock`, {
             unitName: initialStock.unitName,
-            quantity: bundles, // Send bundles
+            quantity: bundles,
             buyPrice: parseFloat(initialStock.buyPrice),
             batchNumber: initialStock.batchNumber || `INITIAL-${Date.now()}`,
             supplier: initialStock.supplier || formData.supplier || 'Initial Stock',
@@ -623,6 +620,9 @@ export default function AddProduct() {
                 </div>
               </div>
 
+              {/* ============================================================
+              CATEGORY FIELD WITH CTA
+              ============================================================ */}
               <div className="add-product-field">
                 <label>Category *</label>
                 <div className="add-product-input-wrapper">
@@ -632,6 +632,7 @@ export default function AddProduct() {
                     value={formData.category}
                     onChange={handleChange}
                     required
+                    disabled={loadingCategories}
                   >
                     <option value="">Select category</option>
                     {categories.map((cat) => (
@@ -639,6 +640,36 @@ export default function AddProduct() {
                     ))}
                   </select>
                 </div>
+                {loadingCategories ? (
+                  <div className="add-product-category-hint">
+                    <FontAwesomeIcon icon={faSpinner} spin />
+                    <span>Loading categories...</span>
+                  </div>
+                ) : categories.length === 0 ? (
+                  <div className="add-product-category-hint error">
+                    <span>No categories found.</span>
+                    <button
+                      type="button"
+                      className="add-product-category-cta"
+                      onClick={() => navigate('/categories')}
+                    >
+                      <FontAwesomeIcon icon={faPlusCircle} /> Create Category
+                    </button>
+                  </div>
+                ) : (
+                  <div className="add-product-category-hint">
+                    <span>
+                      {categories.length} category{categories.length > 1 ? 'ies' : ''} available.
+                      <button
+                        type="button"
+                        className="add-product-category-cta inline"
+                        onClick={() => navigate('/categories')}
+                      >
+                        <FontAwesomeIcon icon={faPlusCircle} /> Manage Categories
+                      </button>
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="add-product-field">

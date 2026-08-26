@@ -9,7 +9,8 @@ import {
   ExpandMore, 
   Add, 
   List as ListIcon,
-  PointOfSale
+  PointOfSale,
+  Label
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
@@ -21,15 +22,10 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [openProducts, setOpenProducts] = useState(false);
-  // const [openSales, setOpenSales] = useState(false);
 
   const handleProductsClick = () => {
     setOpenProducts(!openProducts);
   };
-
-  // const handleSalesClick = () => {
-  //   setOpenSales(!openSales);
-  // };
 
   const isActive = (path) => location.pathname === path;
 
@@ -165,10 +161,34 @@ export default function Sidebar() {
                 }}
               />
             </ListItem>
+            {/* NEW: Categories */}
+            <ListItem
+              onClick={() => navigate('/categories')}
+              sx={{
+                pl: 4,
+                cursor: 'pointer',
+                bgcolor: isActive('/categories') ? 'rgba(255,255,255,0.1)' : 'transparent',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                borderRadius: 1,
+                mx: 1,
+                mb: 0.5,
+              }}
+            >
+              <ListItemIcon sx={{ color: isActive('/categories') ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
+                <Label fontSize="small" />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Categories" 
+                primaryTypographyProps={{
+                  fontSize: 14,
+                  color: isActive('/categories') ? '#fff' : 'rgba(255,255,255,0.6)',
+                }}
+              />
+            </ListItem>
           </List>
         </Collapse>
 
-        {/* Sales - Removed Record Sale sub-item */}
+        {/* Sales */}
         <ListItem
           onClick={() => navigate('/sales')}
           sx={{
