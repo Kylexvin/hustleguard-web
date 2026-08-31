@@ -4,18 +4,12 @@ import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faSpinner, 
-  faDownload, 
   faPrint,
   faCheckCircle,
   faExclamationTriangle,
   faBox,
-  faArrowRight,
   faArrowLeft,
   faPlus,
-  faEye,
-  faCalendarAlt,
-  faTimes,
-  faSave,
   faFileExport,
   faSearch
 } from '@fortawesome/free-solid-svg-icons';
@@ -30,7 +24,7 @@ export default function StockReport() {
   const [error, setError] = useState(null);
   const [weekStart, setWeekStart] = useState('');
   const [weekEnd, setWeekEnd] = useState('');
-  const [expandedItems, setExpandedItems] = useState([]);
+
 
   useEffect(() => {
     if (id) {
@@ -103,13 +97,7 @@ export default function StockReport() {
     return <span className="badge match">0</span>;
   };
 
-  const toggleExpand = (productId) => {
-    setExpandedItems(prev => 
-      prev.includes(productId) 
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
-  };
+
 
   if (loading) {
     return (

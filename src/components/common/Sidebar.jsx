@@ -10,7 +10,12 @@ import {
   Add, 
   List as ListIcon,
   PointOfSale,
-  Label
+  Label,
+  Assessment,
+  ShowChart,
+  MoneyOff,
+  Checklist,
+  TrendingUp
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
@@ -22,9 +27,14 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [openProducts, setOpenProducts] = useState(false);
+  const [openReports, setOpenReports] = useState(false);
 
   const handleProductsClick = () => {
     setOpenProducts(!openProducts);
+  };
+
+  const handleReportsClick = () => {
+    setOpenReports(!openReports);
   };
 
   const isActive = (path) => location.pathname === path;
@@ -161,7 +171,6 @@ export default function Sidebar() {
                 }}
               />
             </ListItem>
-            {/* NEW: Categories */}
             <ListItem
               onClick={() => navigate('/categories')}
               sx={{
@@ -211,6 +220,173 @@ export default function Sidebar() {
             }}
           />
         </ListItem>
+
+        {/* Reports with Dropdown */}
+        <ListItem
+          onClick={handleReportsClick}
+          sx={{
+            cursor: 'pointer',
+            bgcolor: location.pathname.startsWith('/reports') ? 'rgba(255,255,255,0.15)' : 'transparent',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+            borderRadius: 1,
+            mx: 1,
+            mb: 0.5,
+          }}
+        >
+          <ListItemIcon sx={{ color: location.pathname.startsWith('/reports') ? '#fff' : 'rgba(255,255,255,0.7)' }}>
+            <Assessment />
+          </ListItemIcon>
+          <ListItemText 
+            primary="Reports" 
+            primaryTypographyProps={{
+              fontWeight: location.pathname.startsWith('/reports') ? 'bold' : 'normal',
+              color: location.pathname.startsWith('/reports') ? '#fff' : 'rgba(255,255,255,0.7)',
+            }}
+          />
+          {openReports ? <ExpandLess sx={{ color: 'rgba(255,255,255,0.7)' }} /> : <ExpandMore sx={{ color: 'rgba(255,255,255,0.7)' }} />}
+        </ListItem>
+        <Collapse in={openReports} timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            <ListItem
+              onClick={() => navigate('/reports')}
+              sx={{
+                pl: 4,
+                cursor: 'pointer',
+                bgcolor: isActive('/reports') ? 'rgba(255,255,255,0.1)' : 'transparent',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                borderRadius: 1,
+                mx: 1,
+                mb: 0.5,
+              }}
+            >
+              <ListItemIcon sx={{ color: isActive('/reports') ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
+                <Assessment fontSize="small" />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Reports Dashboard" 
+                primaryTypographyProps={{
+                  fontSize: 14,
+                  color: isActive('/reports') ? '#fff' : 'rgba(255,255,255,0.6)',
+                }}
+              />
+            </ListItem>
+            <ListItem
+              onClick={() => navigate('/reports/stock')}
+              sx={{
+                pl: 4,
+                cursor: 'pointer',
+                bgcolor: location.pathname === '/reports/stock' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                borderRadius: 1,
+                mx: 1,
+                mb: 0.5,
+              }}
+            >
+              <ListItemIcon sx={{ color: location.pathname === '/reports/stock' ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
+                <Inventory fontSize="small" />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Stock Report" 
+                primaryTypographyProps={{
+                  fontSize: 14,
+                  color: location.pathname === '/reports/stock' ? '#fff' : 'rgba(255,255,255,0.6)',
+                }}
+              />
+            </ListItem>
+            <ListItem
+              onClick={() => navigate('/reports/profit')}
+              sx={{
+                pl: 4,
+                cursor: 'pointer',
+                bgcolor: location.pathname === '/reports/profit' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                borderRadius: 1,
+                mx: 1,
+                mb: 0.5,
+              }}
+            >
+              <ListItemIcon sx={{ color: location.pathname === '/reports/profit' ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
+                <ShowChart fontSize="small" />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Profit & Loss" 
+                primaryTypographyProps={{
+                  fontSize: 14,
+                  color: location.pathname === '/reports/profit' ? '#fff' : 'rgba(255,255,255,0.6)',
+                }}
+              />
+            </ListItem>
+            <ListItem
+              onClick={() => navigate('/reports/expenses')}
+              sx={{
+                pl: 4,
+                cursor: 'pointer',
+                bgcolor: location.pathname === '/reports/expenses' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                borderRadius: 1,
+                mx: 1,
+                mb: 0.5,
+              }}
+            >
+              <ListItemIcon sx={{ color: location.pathname === '/reports/expenses' ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
+                <MoneyOff fontSize="small" />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Expenses" 
+                primaryTypographyProps={{
+                  fontSize: 14,
+                  color: location.pathname === '/reports/expenses' ? '#fff' : 'rgba(255,255,255,0.6)',
+                }}
+              />
+            </ListItem>
+            <ListItem
+              onClick={() => navigate('/reports/physical-count')}
+              sx={{
+                pl: 4,
+                cursor: 'pointer',
+                bgcolor: location.pathname === '/reports/physical-count' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                borderRadius: 1,
+                mx: 1,
+                mb: 0.5,
+              }}
+            >
+              <ListItemIcon sx={{ color: location.pathname === '/reports/physical-count' ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
+                <Checklist fontSize="small" />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Physical Count" 
+                primaryTypographyProps={{
+                  fontSize: 14,
+                  color: location.pathname === '/reports/physical-count' ? '#fff' : 'rgba(255,255,255,0.6)',
+                }}
+              />
+            </ListItem>
+            <ListItem
+              onClick={() => navigate('/reports/trends')}
+              sx={{
+                pl: 4,
+                cursor: 'pointer',
+                bgcolor: location.pathname === '/reports/trends' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                borderRadius: 1,
+                mx: 1,
+                mb: 0.5,
+              }}
+            >
+              <ListItemIcon sx={{ color: location.pathname === '/reports/trends' ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
+                <TrendingUp fontSize="small" />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Trends" 
+                primaryTypographyProps={{
+                  fontSize: 14,
+                  color: location.pathname === '/reports/trends' ? '#fff' : 'rgba(255,255,255,0.6)',
+                }}
+              />
+            </ListItem>
+          </List>
+        </Collapse>
 
         {/* Alerts */}
         <ListItem

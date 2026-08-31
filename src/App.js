@@ -19,6 +19,11 @@ import Settings from './pages/Settings';
 import Pos from './pages/Pos';
 import MobilePos from './pages/MobilePos'; 
 import Reports from './pages/Reports';
+import StockReport from './pages/reports/StockReport';
+import ProfitLossReport from './pages/reports/ProfitLossReport';
+import ExpensesReport from './pages/reports/ExpensesReport';
+import PhysicalCountReport from './pages/reports/PhysicalCountReport';
+import TrendsReport from './pages/reports/TrendsReport';
 import ProductStock from './pages/ProductStock.jsx';
 import SaleDetails from './pages/SaleDetails.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -26,7 +31,7 @@ import Categories from './pages/Categories';
 import axios from 'axios';
 
 // Axios config
-axios.defaults.baseURL = 'http://localhost:5000/api'; 
+axios.defaults.baseURL = 'https://hustleguard.onrender.com/api'; 
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 axios.defaults.withCredentials = true;
 
@@ -91,7 +96,16 @@ function AppRoutes() {
         <Route path="products/add" element={<AddProduct />} />       
         <Route path="products/edit/:id" element={<AddProduct />} />  
         <Route path="/products/:id/stock" element={<ProductStock />} />
+        
+        {/* Report Routes */}
         <Route path="reports" element={<Reports />} />
+        <Route path="reports/stock" element={<StockReport />} />
+        <Route path="reports/stock/:id" element={<StockReport />} />
+        <Route path="reports/profit" element={<ProfitLossReport />} />
+        <Route path="reports/expenses" element={<ExpensesReport />} />
+        <Route path="reports/physical-count" element={<PhysicalCountReport />} />
+        <Route path="reports/trends" element={<TrendsReport />} />
+        
         <Route path="pos" element={isMobile ? <MobilePos /> : <Pos />} />
         <Route path="sales" element={<Sales />} />
         <Route path="/categories" element={<Categories />} />

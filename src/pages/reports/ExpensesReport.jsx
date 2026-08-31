@@ -57,6 +57,7 @@ export default function ExpensesReport() {
       fetchExpenses();
       fetchSummary();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate]);
 
   const fetchExpenses = async () => {

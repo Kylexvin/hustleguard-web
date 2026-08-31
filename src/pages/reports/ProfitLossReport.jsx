@@ -8,16 +8,14 @@ import {
   faPrint,
   faChartLine,
   faArrowLeft,
-  faCalendarAlt,
   faCoins,
   faMoneyBillWave,
   faShoppingCart,
   faFileExport,
-  faEye,
   faChevronDown,
   faChevronUp,
-  faTrendUp,
-  faTrendDown
+  faArrowUp,
+  faArrowDown
 } from '@fortawesome/free-solid-svg-icons';
 import '../css/ProfitLossReport.css';
 
@@ -28,7 +26,7 @@ export default function ProfitLossReport() {
   const [error, setError] = useState(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [showDetails, setShowDetails] = useState(false);
+  // Removed: showDetails, setShowDetails - not used
   const [expensesExpanded, setExpensesExpanded] = useState(false);
 
   useEffect(() => {
@@ -43,6 +41,7 @@ export default function ProfitLossReport() {
     if (startDate && endDate) {
       fetchProfitData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate]);
 
   const fetchProfitData = async () => {
@@ -65,20 +64,13 @@ export default function ProfitLossReport() {
     return `KES ${(amount || 0).toLocaleString()}`;
   };
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString();
-  };
+  // Removed: formatDate - not used
+  // Removed: getProfitIcon - not used
 
   const getProfitColor = (amount) => {
     if (amount > 0) return '#10b981';
     if (amount < 0) return '#ef4444';
     return '#6b7280';
-  };
-
-  const getProfitIcon = (amount) => {
-    if (amount > 0) return faTrendUp;
-    if (amount < 0) return faTrendDown;
-    return null;
   };
 
   if (loading) {
@@ -182,9 +174,9 @@ export default function ProfitLossReport() {
                 <span className="summary-sub">
                   Margin: {profitData.profit?.grossProfitMargin?.toFixed(1)}%
                   {profitData.profit?.grossProfit > 0 ? (
-                    <FontAwesomeIcon icon={faTrendUp} style={{ color: '#10b981', marginLeft: 4 }} />
+                    <FontAwesomeIcon icon={faArrowUp} style={{ color: '#10b981', marginLeft: 4 }} />
                   ) : (
-                    <FontAwesomeIcon icon={faTrendDown} style={{ color: '#ef4444', marginLeft: 4 }} />
+                    <FontAwesomeIcon icon={faArrowDown} style={{ color: '#ef4444', marginLeft: 4 }} />
                   )}
                 </span>
               </div>
@@ -211,9 +203,9 @@ export default function ProfitLossReport() {
                 <span className="summary-sub">
                   Margin: {profitData.profit?.netProfitMargin?.toFixed(1)}%
                   {profitData.profit?.netProfit > 0 ? (
-                    <FontAwesomeIcon icon={faTrendUp} style={{ color: '#10b981', marginLeft: 4 }} />
+                    <FontAwesomeIcon icon={faArrowUp} style={{ color: '#10b981', marginLeft: 4 }} />
                   ) : (
-                    <FontAwesomeIcon icon={faTrendDown} style={{ color: '#ef4444', marginLeft: 4 }} />
+                    <FontAwesomeIcon icon={faArrowDown} style={{ color: '#ef4444', marginLeft: 4 }} />
                   )}
                 </span>
               </div>

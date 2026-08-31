@@ -7,15 +7,12 @@ import {
   faDownload, 
   faArrowLeft,
   faPlus,
-  faTrash,
-  faPencilAlt,
   faClipboardCheck,
   faFileExport,
   faSearch,
   faFilter,
   faTimes,
   faSave,
-  faCalendarAlt,
   faExclamationTriangle,
   faCheckCircle,
   faTimesCircle,
@@ -36,7 +33,7 @@ export default function PhysicalCountReport() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVariance, setSelectedVariance] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  // Removed: selectedProduct state - not used
   
   const [formData, setFormData] = useState({
     productId: '',
@@ -61,6 +58,7 @@ export default function PhysicalCountReport() {
       fetchSummary();
       fetchProductsNeedingCount();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate]);
 
   const fetchCounts = async () => {
@@ -124,7 +122,6 @@ export default function PhysicalCountReport() {
       countedBy: '',
       notes: ''
     });
-    setSelectedProduct(null);
   };
 
   const formatCurrency = (amount) => `KES ${(amount || 0).toLocaleString()}`;
