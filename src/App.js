@@ -1,7 +1,6 @@
 // src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { useMediaQuery, useTheme } from '@mui/material';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -9,7 +8,6 @@ import { useAuth } from './hooks/useAuth';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Layout from './components/common/Layout';
-import MobileLayout from './components/common/MobileLayout';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import AddProduct from './pages/AddProduct'; 
@@ -17,7 +15,6 @@ import Sales from './pages/Sales';
 import Alerts from './pages/Alerts';
 import Settings from './pages/Settings';
 import Pos from './pages/Pos';
-import MobilePos from './pages/MobilePos'; 
 import Reports from './pages/Reports';
 import StockReport from './pages/reports/StockReport';
 import ProfitLossReport from './pages/reports/ProfitLossReport';
@@ -28,10 +25,15 @@ import ProductStock from './pages/ProductStock.jsx';
 import SaleDetails from './pages/SaleDetails.jsx';
 import NotFound from './pages/NotFound.jsx';
 import Categories from './pages/Categories';
+import Expenses from './pages/expenses/Expenses';
+import AddExpense from './pages/expenses/AddExpense';
+
 import axios from 'axios';
 
 // Axios config
-axios.defaults.baseURL = 'https://hustleguard.onrender.com/api'; 
+// axios.defaults.baseURL = 'http://localhost:5000/api'; 
+axios.defaults.baseURL = 'https://hustleguard.onrender.com/api';
+
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 axios.defaults.withCredentials = true;
 
@@ -79,16 +81,13 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function AppRoutes() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/" element={
         <ProtectedRoute>
-          {isMobile ? <MobileLayout /> : <Layout />}
+          <Layout />
         </ProtectedRoute>
       }>
         <Route index element={<Dashboard />} />
@@ -105,8 +104,10 @@ function AppRoutes() {
         <Route path="reports/expenses" element={<ExpensesReport />} />
         <Route path="reports/physical-count" element={<PhysicalCountReport />} />
         <Route path="reports/trends" element={<TrendsReport />} />
-        
-        <Route path="pos" element={isMobile ? <MobilePos /> : <Pos />} />
+        <Route path="/expenses" element={<Expenses />} />
+        <Route path="/expenses/add" element={<AddExpense />} />
+        <Route path="/expenses/edit/:id" element={<AddExpense />} />
+        <Route path="pos" element={<Pos />} />
         <Route path="sales" element={<Sales />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/sales/:invoiceNumber" element={<SaleDetails />} />

@@ -61,8 +61,11 @@ export default function Sales() {
     try {
       setLoadingStats(true);
       const response = await axios.get('/sales/stats');
-      // The API returns { success: true, data: { today: {...}, month: {...} } }
-      const statsData = response.data.data || { today: { totalSales: 0, totalRevenue: 0, totalProfit: 0 }, month: { totalSales: 0, totalRevenue: 0, totalProfit: 0 }, topProducts: [] };
+      const statsData = response.data.data || { 
+        today: { totalSales: 0, totalRevenue: 0, totalProfit: 0 }, 
+        month: { totalSales: 0, totalRevenue: 0, totalProfit: 0 }, 
+        topProducts: [] 
+      };
       setStats(statsData);
     } catch (err) {
       console.error('Error fetching stats:', err);
@@ -84,8 +87,8 @@ export default function Sales() {
       const searchLower = search.toLowerCase();
       filtered = filtered.filter(sale => 
         sale.customer?.toLowerCase().includes(searchLower) ||
-        sale._id?.toLowerCase().includes(searchLower) ||
-        sale.product?.name?.toLowerCase().includes(searchLower)
+        sale.invoiceNumber?.toLowerCase().includes(searchLower) ||
+        sale.items?.some(item => item.productName?.toLowerCase().includes(searchLower))
       );
     }
 
@@ -124,13 +127,15 @@ export default function Sales() {
     currentPage * itemsPerPage
   );
 
+  // Helpers
   const getPaymentLabel = (method) => {
     const labels = {
       cash: 'Cash',
       mobile_money: 'M-Pesa',
       bank_transfer: 'Bank Transfer',
       credit: 'Credit',
-      card: 'Card'
+      mpesa: 'M-Pesa',
+      other: 'Other'
     };
     return labels[method] || method || 'N/A';
   };
@@ -149,6 +154,18 @@ export default function Sales() {
 
   const formatCurrency = (amount) => {
     return `KES ${(amount || 0).toLocaleString()}`;
+  };
+
+  const getTotalItems = (sale) => {
+    return sale.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  };
+
+  const getItemNames = (sale) => {
+    if (!sale.items || sale.items.length === 0) return 'N/A';
+    const names = sale.items.map(item => item.productName).filter(Boolean);
+    if (names.length === 0) return 'N/A';
+    if (names.length === 1) return names[0];
+    return `${names[0]} +${names.length - 1} more`;
   };
 
   const handlePageChange = (page) => {
@@ -204,7 +221,7 @@ export default function Sales() {
           <button className="sales-export-btn" onClick={handleExport}>
             <FontAwesomeIcon icon={faDownload} /> Export
           </button>
-          <button className="sales-new-btn" onClick={() => navigate('/sales/new')}>
+          <button className="sales-new-btn" onClick={() => navigate('/pos')}>
             <FontAwesomeIcon icon={faShoppingCart} /> New Sale
           </button>
         </div>
@@ -302,7 +319,7 @@ export default function Sales() {
           <thead>
             <tr>
               <th>Invoice</th>
-              <th>Product</th>
+              <th>Products</th>
               <th>Customer</th>
               <th>Qty</th>
               <th>Total</th>
@@ -324,17 +341,17 @@ export default function Sales() {
             ) : (
               paginatedSales.map((sale) => (
                 <tr key={sale._id}>
-                  <td className="sales-invoice">#{sale._id?.slice(-6) || 'N/A'}</td>
+                  <td className="sales-invoice">#{sale.invoiceNumber?.slice(-6) || 'N/A'}</td>
                   <td>
                     <div className="sales-product-info">
-                      <span className="product-name">{sale.product?.name || 'N/A'}</span>
-                      <span className="product-category">{sale.product?.category || ''}</span>
+                      <span className="product-name">{getItemNames(sale)}</span>
+                      <span className="product-category">{sale.items?.length || 0} items</span>
                     </div>
                   </td>
                   <td>{sale.customer || 'Walk-in'}</td>
-                  <td className="sales-quantity">{sale.quantity || 0}</td>
-                  <td className="sales-amount">{formatCurrency(sale.sellingPrice * sale.quantity || 0)}</td>
-                  <td className="sales-profit">{formatCurrency(sale.profit || 0)}</td>
+                  <td className="sales-quantity">{getTotalItems(sale)}</td>
+                  <td className="sales-amount">{formatCurrency(sale.total || 0)}</td>
+                  <td className="sales-profit">{formatCurrency(sale.totalProfit || 0)}</td>
                   <td>{getPaymentLabel(sale.paymentMethod)}</td>
                   <td className="sales-date">{formatDate(sale.saleDate)}</td>
                   <td>
@@ -342,7 +359,7 @@ export default function Sales() {
                       <button 
                         className="sales-action-btn view"
                         title="View Details"
-                        onClick={() => navigate(`/sales/${sale._id}`)}
+                        onClick={() => navigate(`/sales/${sale.invoiceNumber}`)}
                       >
                         <FontAwesomeIcon icon={faEye} />
                       </button>

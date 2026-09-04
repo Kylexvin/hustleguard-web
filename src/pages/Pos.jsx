@@ -1,3 +1,4 @@
+// src/pages/Pos.jsx
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Search,
@@ -14,7 +15,7 @@ import {
   LoaderCircle,
   TriangleAlert,
   PackageX,
-  ChevronDown
+  ChevronDown,
 } from 'lucide-react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
@@ -26,7 +27,6 @@ export default function Pos() {
   const [search, setSearch] = useState('');
   const [customer, setCustomer] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [isListening, setIsListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState('idle');
   const [voiceTranscript, setVoiceTranscript] = useState('');
@@ -38,12 +38,36 @@ export default function Pos() {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [barcodeError, setBarcodeError] = useState(null);
   const [expandedProducts, setExpandedProducts] = useState({});
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [cartOpen, setCartOpen] = useState(false);
+  
+  // Payment Modal State
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [amountPaid, setAmountPaid] = useState('');
+  const [paymentError, setPaymentError] = useState('');
 
   const recognitionRef = useRef(null);
   const timeoutRef = useRef(null);
   const searchTimeoutRef = useRef(null);
   const cartRef = useRef(cart);
   const initialLoadDone = useRef(false);
+
+  // Check mobile
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close cart on desktop
+  useEffect(() => {
+    if (!isMobile) {
+      setCartOpen(true);
+    }
+  }, [isMobile]);
 
   useEffect(() => {
     cartRef.current = cart;
@@ -137,8 +161,13 @@ export default function Pos() {
         maxQuantity: Math.floor(availableInUnit)
       }]);
       toast.success(`${productData.productName} (${unit.label}) added`);
+      
+      // Open cart on mobile when item is added
+      if (isMobile) {
+        setCartOpen(true);
+      }
     }
-  }, [products, getBestSellUnit]);
+  }, [products, getBestSellUnit, isMobile]);
 
   // ============================================================
   // Remove from cart
@@ -194,21 +223,20 @@ export default function Pos() {
 
       if (response.data.success) {
         const posProducts = response.data.data.map(product => {
-          const stock = product.totalStock || 0;
+          const stock = product.stock || 0;
           
           return {
             productId: product._id,
             productName: product.name,
             description: product.description,
             category: product.category,
-            baseUnit: product.baseUnit || { name: 'unit', label: 'Unit' },
-            sellUnits: product.sellUnits || [],
-            stockUnits: product.stockUnits || [],
+            baseUnit: product.units?.find(u => u.isBase) || { name: 'unit', label: 'Unit' },
+            sellUnits: product.units || [],
             totalStock: stock,
             minStockAlert: product.minStockAlert || 5,
             isLowStock: stock > 0 && stock <= (product.minStockAlert || 5),
             isOutOfStock: stock <= 0,
-            price: product.sellingPrice || 0,
+            price: product.units?.find(u => u.isBase)?.sellPrice || 0,
             original: product
           };
         });
@@ -243,8 +271,7 @@ export default function Pos() {
         params: {
           query: query.trim(),
           limit: 50,
-          includeOutOfStock: false,
-          includeUnits: true
+          includeOutOfStock: false
         }
       });
       
@@ -254,14 +281,13 @@ export default function Pos() {
           productName: product.name,
           description: product.description,
           category: product.category,
-          baseUnit: product.baseUnit || { name: 'unit', label: 'Unit' },
-          sellUnits: product.sellUnits || [],
-          stockUnits: product.stockUnits || [],
-          totalStock: product.totalStock || 0,
+          baseUnit: product.units?.find(u => u.isBase) || { name: 'unit', label: 'Unit' },
+          sellUnits: product.units || [],
+          totalStock: product.stock || 0,
           minStockAlert: product.minStockAlert || 5,
           isLowStock: product.isLowStock || false,
           isOutOfStock: product.isOutOfStock || false,
-          price: product.sellUnits?.[0]?.sellPrice || 0,
+          price: product.units?.find(u => u.isBase)?.sellPrice || 0,
           original: product
         }));
         setProducts(searchResults);
@@ -310,7 +336,7 @@ export default function Pos() {
 
       if (response.data.success) {
         const product = response.data.data;
-        const stock = product.totalStock || 0;
+        const stock = product.stock || 0;
         const scannedUnit = product.matchedUnit || getBestSellUnit(product);
         
         addToCart({
@@ -332,61 +358,52 @@ export default function Pos() {
   }, [addToCart, getBestSellUnit]);
 
   // ============================================================
-  // Handle checkout
+  // Open Payment Modal
   // ============================================================
-  const handleCheckout = useCallback(async () => {
+  const openPaymentModal = useCallback(() => {
     if (cart.length === 0) {
       toast.error('Cart is empty');
       return;
     }
+    setShowPaymentModal(true);
+    setPaymentMethod('cash');
+    setAmountPaid('');
+    setPaymentError('');
+  }, [cart.length]);
 
+  // ============================================================
+  // Process Payment
+  // ============================================================
+  const processPayment = useCallback(async () => {
     const total = cart.reduce((sum, item) => sum + item.totalPrice, 0);
-    const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-
-    const saleItems = cart.map(item => ({
-      productId: item.productId,
-      unitName: item.unitName,
-      quantity: item.quantity
-    }));
-
-    const result = await Swal.fire({
-      title: 'Confirm Sale',
-      html: `
-        <div style="text-align: left; max-height: 300px; overflow-y: auto;">
-          <p><strong>Items:</strong> ${cart.length} products</p>
-          <p><strong>Total Units:</strong> ${itemCount}</p>
-          <p><strong>Total:</strong> KES ${total.toFixed(2)}</p>
-          <p><strong>Customer:</strong> ${customer || 'Walk-in'}</p>
-          <p><strong>Payment:</strong> ${paymentMethod}</p>
-          <hr style="margin: 10px 0;" />
-          ${cart.map(item => `
-            <div style="display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0;">
-              <span>${item.productName} (${item.unitLabel}) × ${item.quantity}</span>
-              <span>KES ${item.totalPrice.toFixed(2)}</span>
-            </div>
-          `).join('')}
-        </div>
-      `,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#1a7f4e',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Complete Sale',
-      cancelButtonText: 'Cancel'
-    });
-
-    if (!result.isConfirmed) return;
+    
+    const paidAmount = parseFloat(amountPaid);
+    if (isNaN(paidAmount) || paidAmount <= 0) {
+      setPaymentError('Please enter a valid amount');
+      return;
+    }
+    
+    if (paidAmount < total) {
+      setPaymentError(`Amount paid (${paidAmount}) is less than total (${total})`);
+      return;
+    }
 
     try {
       setProcessingCheckout(true);
       
+      const saleItems = cart.map(item => ({
+        productId: item.productId,
+        unitName: item.unitName,
+        quantity: item.quantity
+      }));
+
       const saleData = {
         items: saleItems,
         customer: customer || 'Walk-in Customer',
         customerPhone: customerPhone || '',
         paymentMethod: paymentMethod,
         paymentStatus: 'paid',
-        amountPaid: total,
+        amountPaid: paidAmount,
         notes: `POS Sale - ${new Date().toLocaleString()}`
       };
 
@@ -400,8 +417,9 @@ export default function Pos() {
           <div style="text-align: left;">
             <p><strong>Invoice:</strong> ${response.data.data?.invoiceNumber || 'N/A'}</p>
             <p><strong>Total:</strong> KES ${total.toFixed(2)}</p>
-            <p><strong>Items:</strong> ${cart.length} products (${itemCount} units)</p>
-            <p><strong>Customer:</strong> ${customer || 'Walk-in'}</p>
+            <p><strong>Paid:</strong> KES ${paidAmount.toFixed(2)}</p>
+            <p><strong>Change:</strong> KES ${(paidAmount - total).toFixed(2)}</p>
+            <p><strong>Items:</strong> ${cart.length} products</p>
             <p><strong>Payment:</strong> ${paymentMethod}</p>
           </div>
         `,
@@ -412,6 +430,13 @@ export default function Pos() {
       setCart([]);
       setCustomer('');
       setCustomerPhone('');
+      setShowPaymentModal(false);
+      setPaymentMethod('cash');
+      setAmountPaid('');
+      
+      if (isMobile) {
+        setCartOpen(false);
+      }
       
       initialLoadDone.current = false;
       loadInitialProducts();
@@ -420,17 +445,11 @@ export default function Pos() {
       console.error('Error processing sale:', err);
       const errorMsg = err.response?.data?.message || 'Failed to process sale.';
       toast.error(errorMsg);
-      
-      await Swal.fire({
-        title: 'Sale Failed',
-        text: errorMsg,
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
+      setPaymentError(errorMsg);
     } finally {
       setProcessingCheckout(false);
     }
-  }, [cart, customer, customerPhone, paymentMethod, loadInitialProducts]);
+  }, [cart, customer, customerPhone, paymentMethod, amountPaid, loadInitialProducts, isMobile]);
 
   // ============================================================
   // Voice command processing
@@ -448,7 +467,7 @@ export default function Pos() {
 
     if (lower.includes('checkout') || lower.includes('pay now') || lower.includes('complete sale')) {
       if (cart.length > 0) {
-        handleCheckout();
+        openPaymentModal();
       } else {
         toast.error('Cart is empty');
       }
@@ -526,7 +545,7 @@ export default function Pos() {
       toast.error(`Couldn't find ${productName}`);
       setVoiceStatus('idle');
     }
-  }, [products, cart, handleCheckout, removeFromCart, addToCart, getBestSellUnit]);
+  }, [products, cart, removeFromCart, addToCart, getBestSellUnit, openPaymentModal]);
 
   // Speech recognition setup
   useEffect(() => {
@@ -613,6 +632,10 @@ export default function Pos() {
     handleBarcodeScan(barcodeInput);
   };
 
+  const toggleCart = () => {
+    setCartOpen(!cartOpen);
+  };
+
   const total = cart.reduce((sum, item) => sum + item.totalPrice, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -623,6 +646,105 @@ export default function Pos() {
     'Clear cart',
     'Checkout'
   ];
+
+  // ============================================================
+  // RENDER CART CONTENT (reused for desktop and mobile)
+  // ============================================================
+  const renderCartContent = () => (
+    <>
+      <div className="pos-cart-header">
+        <h3><ShoppingCart size={17} /> Cart</h3>
+        <span className="pos-cart-count">{itemCount} units</span>
+        {isMobile && (
+          <button className="pos-cart-close" onClick={toggleCart}>
+            <X size={18} />
+          </button>
+        )}
+      </div>
+
+      <div className="pos-cart-items">
+        {cart.length === 0 ? (
+          <div className="pos-empty-cart">
+            <ShoppingCart size={30} />
+            <p>No items in cart</p>
+            <span>Search, scan, or tap a unit to add</span>
+          </div>
+        ) : (
+          cart.map((item, index) => (
+            <div key={`${item.productId}-${item.unitName}-${index}`} className="pos-cart-item">
+              <div className="pos-cart-item-top">
+                <span className="pos-cart-item-name">
+                  {item.productName}
+                  <span className="pos-cart-item-unit">{item.unitLabel}</span>
+                </span>
+                <button className="pos-cart-remove" onClick={() => removeFromCart(item.productId, item.unitName)}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <div className="pos-cart-item-bottom">
+                <div className="pos-qty-group">
+                  <button
+                    className="pos-qty-btn"
+                    onClick={() => updateQuantity(item.productId, item.unitName, -1)}
+                    disabled={item.quantity <= 1}
+                  >
+                    <Minus size={13} />
+                  </button>
+                  <span>{item.quantity}</span>
+                  <button
+                    className="pos-qty-btn"
+                    onClick={() => updateQuantity(item.productId, item.unitName, 1)}
+                    disabled={item.quantity >= item.maxQuantity}
+                  >
+                    <Plus size={13} />
+                  </button>
+                </div>
+                <span className="pos-cart-item-total">KES {item.totalPrice.toFixed(2)}</span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="pos-checkout">
+        <div className="pos-checkout-row">
+          <input
+            type="text"
+            placeholder="Customer name (optional)"
+            value={customer}
+            onChange={(e) => setCustomer(e.target.value)}
+            className="pos-input"
+          />
+          <input
+            type="text"
+            placeholder="Phone (optional)"
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            className="pos-input"
+          />
+        </div>
+
+        <div className="pos-totals">
+          <div className="pos-total-row">
+            <span>Items</span>
+            <span>{cart.length} products ({itemCount} units)</span>
+          </div>
+          <div className="pos-total-row grand-total">
+            <span>Total</span>
+            <span>KES {total.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <button
+          className="pos-pay-btn"
+          disabled={cart.length === 0 || processingCheckout}
+          onClick={openPaymentModal}
+        >
+          <CreditCard size={18} /> Proceed to Payment
+        </button>
+      </div>
+    </>
+  );
 
   return (
     <>
@@ -698,6 +820,14 @@ export default function Pos() {
               {isListening ? <MicOff size={18} /> : <Mic size={18} />}
               {isListening && <span className="pos-voice-pulse" />}
             </button>
+
+            {/* Mobile Cart Toggle */}
+            {isMobile && (
+              <button className="pos-icon-btn pos-cart-toggle" onClick={toggleCart}>
+                <ShoppingCart size={18} />
+                {cart.length > 0 && <span className="pos-cart-badge">{cart.length}</span>}
+              </button>
+            )}
           </div>
 
           {barcodeError && (
@@ -846,114 +976,131 @@ export default function Pos() {
           </div>
         </div>
 
-        {/* Right Column - Cart & Checkout */}
-        <div className="pos-right">
-          <div className="pos-cart">
-            <div className="pos-cart-header">
-              <h3><ShoppingCart size={17} /> Cart</h3>
-              <span className="pos-cart-count">{itemCount} units</span>
+        {/* Right Column - Cart (Desktop) */}
+        {!isMobile && (
+          <div className="pos-right">
+            <div className="pos-cart">
+              {renderCartContent()}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Cart - Bottom Sheet */}
+      {isMobile && (
+        <>
+          {/* Cart Overlay */}
+          {cartOpen && <div className="pos-cart-overlay" onClick={toggleCart} />}
+          
+          {/* Cart Sheet */}
+          <div className={`pos-cart-sheet ${cartOpen ? 'open' : ''}`}>
+            <div className="pos-cart-sheet-handle">
+              <div className="pos-cart-sheet-drag" />
+            </div>
+            <div className="pos-cart">
+              {renderCartContent()}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ============================================================
+          PAYMENT MODAL
+          ============================================================ */}
+      {showPaymentModal && (
+        <div className="pos-modal-overlay">
+          <div className="pos-modal">
+            <div className="pos-modal-header">
+              <h3>Payment</h3>
+              <button className="pos-modal-close" onClick={() => setShowPaymentModal(false)}>
+                <X size={20} />
+              </button>
             </div>
 
-            <div className="pos-cart-items">
-              {cart.length === 0 ? (
-                <div className="pos-empty-cart">
-                  <ShoppingCart size={30} />
-                  <p>No items in cart</p>
-                  <span>Search, scan, or tap a unit to add</span>
-                </div>
-              ) : (
-                cart.map((item, index) => (
-                  <div key={`${item.productId}-${item.unitName}-${index}`} className="pos-cart-item">
-                    <div className="pos-cart-item-top">
-                      <span className="pos-cart-item-name">
-                        {item.productName}
-                        <span className="pos-cart-item-unit">{item.unitLabel}</span>
-                      </span>
-                      <button className="pos-cart-remove" onClick={() => removeFromCart(item.productId, item.unitName)}>
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                    <div className="pos-cart-item-bottom">
-                      <div className="pos-qty-group">
-                        <button
-                          className="pos-qty-btn"
-                          onClick={() => updateQuantity(item.productId, item.unitName, -1)}
-                          disabled={item.quantity <= 1}
-                        >
-                          <Minus size={13} />
-                        </button>
-                        <span>{item.quantity}</span>
-                        <button
-                          className="pos-qty-btn"
-                          onClick={() => updateQuantity(item.productId, item.unitName, 1)}
-                          disabled={item.quantity >= item.maxQuantity}
-                        >
-                          <Plus size={13} />
-                        </button>
-                      </div>
-                      <span className="pos-cart-item-total">KES {item.totalPrice.toFixed(2)}</span>
-                    </div>
+            <div className="pos-modal-body">
+              {/* Cart Summary */}
+              <div className="pos-modal-summary">
+                <div className="pos-modal-totals">
+                  <div className="pos-modal-total-row">
+                    <span>Subtotal</span>
+                    <span>KES {total.toFixed(2)}</span>
                   </div>
-                ))
-              )}
+                  {cart.map((item, i) => (
+                    <div key={i} className="pos-modal-item-row">
+                      <span>{item.productName} × {item.quantity} {item.unitLabel}</span>
+                      <span>KES {item.totalPrice.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  <div className="pos-modal-total-row grand-total">
+                    <span>Total</span>
+                    <span>KES {total.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Method */}
+              <div className="pos-modal-payment">
+                <label>Payment Method</label>
+                <div className="pos-payment-methods">
+                  {['cash', 'mpesa', 'bank', 'credit'].map((method) => (
+                    <button
+                      key={method}
+                      className={`pos-payment-btn ${paymentMethod === method ? 'active' : ''}`}
+                      onClick={() => setPaymentMethod(method)}
+                    >
+                      {method.charAt(0).toUpperCase() + method.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Amount */}
+              <div className="pos-modal-amount">
+                <label>Amount Paid</label>
+                <input
+                  type="number"
+                  placeholder="Enter amount received"
+                  value={amountPaid}
+                  onChange={(e) => {
+                    setAmountPaid(e.target.value);
+                    setPaymentError('');
+                  }}
+                  className="pos-modal-input"
+                  autoFocus
+                />
+                {paymentError && (
+                  <div className="pos-modal-error">{paymentError}</div>
+                )}
+                {amountPaid && parseFloat(amountPaid) >= total && (
+                  <div className="pos-modal-change">
+                    Change: KES {(parseFloat(amountPaid) - total).toFixed(2)}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="pos-checkout">
-              <div className="pos-checkout-row">
-                <input
-                  type="text"
-                  placeholder="Customer name (optional)"
-                  value={customer}
-                  onChange={(e) => setCustomer(e.target.value)}
-                  className="pos-input"
-                />
-                <input
-                  type="text"
-                  placeholder="Phone (optional)"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="pos-input"
-                />
-              </div>
-
-              <div className="pos-payment-methods">
-                {['cash', 'mpesa', 'bank', 'credit'].map((method) => (
-                  <button
-                    key={method}
-                    className={`pos-payment-btn ${paymentMethod === method ? 'active' : ''}`}
-                    onClick={() => setPaymentMethod(method)}
-                  >
-                    {method.charAt(0).toUpperCase() + method.slice(1)}
-                  </button>
-                ))}
-              </div>
-
-              <div className="pos-totals">
-                <div className="pos-total-row">
-                  <span>Items</span>
-                  <span>{cart.length} products ({itemCount} units)</span>
-                </div>
-                <div className="pos-total-row grand-total">
-                  <span>Total</span>
-                  <span>KES {total.toFixed(2)}</span>
-                </div>
-              </div>
-
+            <div className="pos-modal-footer">
               <button
-                className="pos-pay-btn"
-                disabled={cart.length === 0 || processingCheckout}
-                onClick={handleCheckout}
+                className="pos-modal-cancel"
+                onClick={() => setShowPaymentModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="pos-modal-confirm"
+                disabled={processingCheckout}
+                onClick={processPayment}
               >
                 {processingCheckout ? (
                   <><LoaderCircle className="spin" size={18} /> Processing...</>
                 ) : (
-                  <><CreditCard size={18} /> Pay KES {total.toFixed(2)}</>
+                  <>Complete Payment</>
                 )}
               </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

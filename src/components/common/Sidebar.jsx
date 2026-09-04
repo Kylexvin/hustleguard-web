@@ -1,441 +1,137 @@
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, Toolbar, Collapse } from '@mui/material';
+// src/components/common/Sidebar.jsx
+import React, { useState } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Dashboard, 
-  Inventory, 
-  Receipt, 
-  Notifications, 
-  Settings, 
-  ExpandLess, 
-  ExpandMore, 
-  Add, 
-  List as ListIcon,
-  PointOfSale,
-  Label,
-  Assessment,
-  ShowChart,
-  MoneyOff,
-  Checklist,
-  TrendingUp
-} from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useState } from 'react';
-import './css/Sidebar.css';
+  LayoutDashboard, ShoppingCart, Package, Receipt, 
+  Settings, LogOut, ChevronDown, BarChart3, 
+   Plus, List as ListIcon, 
+  FolderOpen, CreditCard, AlertCircle
+} from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import styles from './css/Sidebar.module.css';
 
-const drawerWidth = 240;
-
-export default function Sidebar() {
+const Sidebar = ({ isMobile, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [openProducts, setOpenProducts] = useState(false);
-  const [openReports, setOpenReports] = useState(false);
+  const { logout } = useAuth();
+  const [productsOpen, setProductsOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
 
-  const handleProductsClick = () => {
-    setOpenProducts(!openProducts);
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
   };
 
-  const handleReportsClick = () => {
-    setOpenReports(!openReports);
+  const handleNavClick = () => {
+    if (isMobile && onClose) onClose();
   };
 
-  const isActive = (path) => location.pathname === path;
+  const isProductsActive = location.pathname.startsWith('/products') || 
+                          location.pathname === '/categories';
+
+  const isReportsActive = location.pathname.startsWith('/reports') ||
+                          location.pathname === '/expenses';
 
   return (
-    <Drawer
-      variant="permanent"
-      sx={{
-        width: drawerWidth,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box', bgcolor: '#1B4D3D', color: '#fff' },
-      }}
-      className="sidebar"
-    >
-      <Toolbar />
-      <List>
+    <aside className={`${styles.sidebar} ${isMobile ? styles.mobile : ''}`}>
+      {isMobile && <div className={styles.mobileSpacer} />}
+
+      <nav className={styles.nav}>
         {/* Dashboard */}
-        <ListItem
-          onClick={() => navigate('/')}
-          sx={{
-            cursor: 'pointer',
-            bgcolor: isActive('/') ? 'rgba(255,255,255,0.15)' : 'transparent',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-            borderRadius: 1,
-            mx: 1,
-            mb: 0.5,
-          }}
-        >
-          <ListItemIcon sx={{ color: isActive('/') ? '#fff' : 'rgba(255,255,255,0.7)' }}>
-            <Dashboard />
-          </ListItemIcon>
-          <ListItemText 
-            primary="Dashboard" 
-            primaryTypographyProps={{
-              fontWeight: isActive('/') ? 'bold' : 'normal',
-              color: isActive('/') ? '#fff' : 'rgba(255,255,255,0.7)',
-            }}
-          />
-        </ListItem>
-
+        <NavLink to="/" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`} onClick={handleNavClick}>
+          <LayoutDashboard size={16} className={styles.navIcon} /> 
+          <span className={styles.navLabel}>Dashboard</span>
+        </NavLink>
+        
         {/* POS */}
-        <ListItem
-          onClick={() => navigate('/pos')}
-          sx={{
-            cursor: 'pointer',
-            bgcolor: isActive('/pos') ? 'rgba(255,255,255,0.15)' : 'transparent',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-            borderRadius: 1,
-            mx: 1,
-            mb: 0.5,
-          }}
-        >
-          <ListItemIcon sx={{ color: isActive('/pos') ? '#fff' : 'rgba(255,255,255,0.7)' }}>
-            <PointOfSale />
-          </ListItemIcon>
-          <ListItemText 
-            primary="POS" 
-            primaryTypographyProps={{
-              fontWeight: isActive('/pos') ? 'bold' : 'normal',
-              color: isActive('/pos') ? '#fff' : 'rgba(255,255,255,0.7)',
-            }}
-          />
-        </ListItem>
+        <NavLink to="/pos" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`} onClick={handleNavClick}>
+          <ShoppingCart size={16} className={styles.navIcon} /> 
+          <span className={styles.navLabel}>POS</span>
+        </NavLink>
 
-        {/* Products with Dropdown */}
-        <ListItem
-          onClick={handleProductsClick}
-          sx={{
-            cursor: 'pointer',
-            bgcolor: location.pathname.startsWith('/products') ? 'rgba(255,255,255,0.15)' : 'transparent',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-            borderRadius: 1,
-            mx: 1,
-            mb: 0.5,
-          }}
-        >
-          <ListItemIcon sx={{ color: location.pathname.startsWith('/products') ? '#fff' : 'rgba(255,255,255,0.7)' }}>
-            <Inventory />
-          </ListItemIcon>
-          <ListItemText 
-            primary="Products" 
-            primaryTypographyProps={{
-              fontWeight: location.pathname.startsWith('/products') ? 'bold' : 'normal',
-              color: location.pathname.startsWith('/products') ? '#fff' : 'rgba(255,255,255,0.7)',
-            }}
-          />
-          {openProducts ? <ExpandLess sx={{ color: 'rgba(255,255,255,0.7)' }} /> : <ExpandMore sx={{ color: 'rgba(255,255,255,0.7)' }} />}
-        </ListItem>
-        <Collapse in={openProducts} timeout="auto" unmountOnExit>
-          <List component="div" disablePadding>
-            <ListItem
-              onClick={() => navigate('/products')}
-              sx={{
-                pl: 4,
-                cursor: 'pointer',
-                bgcolor: isActive('/products') ? 'rgba(255,255,255,0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-                borderRadius: 1,
-                mx: 1,
-                mb: 0.5,
-              }}
-            >
-              <ListItemIcon sx={{ color: isActive('/products') ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
-                <ListIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="All Products" 
-                primaryTypographyProps={{
-                  fontSize: 14,
-                  color: isActive('/products') ? '#fff' : 'rgba(255,255,255,0.6)',
-                }}
-              />
-            </ListItem>
-            <ListItem
-              onClick={() => navigate('/products/add')}
-              sx={{
-                pl: 4,
-                cursor: 'pointer',
-                bgcolor: isActive('/products/add') ? 'rgba(255,255,255,0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-                borderRadius: 1,
-                mx: 1,
-                mb: 0.5,
-              }}
-            >
-              <ListItemIcon sx={{ color: isActive('/products/add') ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
-                <Add fontSize="small" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Add Product" 
-                primaryTypographyProps={{
-                  fontSize: 14,
-                  color: isActive('/products/add') ? '#fff' : 'rgba(255,255,255,0.6)',
-                }}
-              />
-            </ListItem>
-            <ListItem
-              onClick={() => navigate('/categories')}
-              sx={{
-                pl: 4,
-                cursor: 'pointer',
-                bgcolor: isActive('/categories') ? 'rgba(255,255,255,0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-                borderRadius: 1,
-                mx: 1,
-                mb: 0.5,
-              }}
-            >
-              <ListItemIcon sx={{ color: isActive('/categories') ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
-                <Label fontSize="small" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Categories" 
-                primaryTypographyProps={{
-                  fontSize: 14,
-                  color: isActive('/categories') ? '#fff' : 'rgba(255,255,255,0.6)',
-                }}
-              />
-            </ListItem>
-          </List>
-        </Collapse>
-
+        {/* Products - Expandable */}
+        <div>
+          <button 
+            className={`${styles.navLinkExpandable} ${isProductsActive ? styles.navLinkActive : ''}`} 
+            onClick={() => setProductsOpen(!productsOpen)}
+          >
+            <span className={styles.navLinkExpandableLabel}>
+              <Package size={16} className={styles.navIcon} /> 
+              <span className={styles.navLabel}>Products</span>
+            </span>
+            <ChevronDown size={13} className={styles.chevron} data-open={productsOpen} />
+          </button>
+          {productsOpen && (
+            <div className={styles.subNav}>
+              <NavLink to="/products" className={({ isActive }) => `${styles.subLink} ${isActive ? styles.subLinkActive : ''}`} onClick={handleNavClick}>
+                <ListIcon size={14} /> All Products
+              </NavLink>
+              <NavLink to="/products/add" className={({ isActive }) => `${styles.subLink} ${isActive ? styles.subLinkActive : ''}`} onClick={handleNavClick}>
+                <Plus size={14} /> Add Product
+              </NavLink>
+              <NavLink to="/categories" className={({ isActive }) => `${styles.subLink} ${isActive ? styles.subLinkActive : ''}`} onClick={handleNavClick}>
+                <FolderOpen size={14} /> Categories
+              </NavLink>
+            </div>
+          )}
+        </div>
+        
         {/* Sales */}
-        <ListItem
-          onClick={() => navigate('/sales')}
-          sx={{
-            cursor: 'pointer',
-            bgcolor: isActive('/sales') ? 'rgba(255,255,255,0.15)' : 'transparent',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-            borderRadius: 1,
-            mx: 1,
-            mb: 0.5,
-          }}
-        >
-          <ListItemIcon sx={{ color: isActive('/sales') ? '#fff' : 'rgba(255,255,255,0.7)' }}>
-            <Receipt />
-          </ListItemIcon>
-          <ListItemText 
-            primary="Sales" 
-            primaryTypographyProps={{
-              fontWeight: isActive('/sales') ? 'bold' : 'normal',
-              color: isActive('/sales') ? '#fff' : 'rgba(255,255,255,0.7)',
-            }}
-          />
-        </ListItem>
+        <NavLink to="/sales" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`} onClick={handleNavClick}>
+          <Receipt size={16} className={styles.navIcon} /> 
+          <span className={styles.navLabel}>Sales</span>
+        </NavLink>
 
-        {/* Reports with Dropdown */}
-        <ListItem
-          onClick={handleReportsClick}
-          sx={{
-            cursor: 'pointer',
-            bgcolor: location.pathname.startsWith('/reports') ? 'rgba(255,255,255,0.15)' : 'transparent',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-            borderRadius: 1,
-            mx: 1,
-            mb: 0.5,
-          }}
-        >
-          <ListItemIcon sx={{ color: location.pathname.startsWith('/reports') ? '#fff' : 'rgba(255,255,255,0.7)' }}>
-            <Assessment />
-          </ListItemIcon>
-          <ListItemText 
-            primary="Reports" 
-            primaryTypographyProps={{
-              fontWeight: location.pathname.startsWith('/reports') ? 'bold' : 'normal',
-              color: location.pathname.startsWith('/reports') ? '#fff' : 'rgba(255,255,255,0.7)',
-            }}
-          />
-          {openReports ? <ExpandLess sx={{ color: 'rgba(255,255,255,0.7)' }} /> : <ExpandMore sx={{ color: 'rgba(255,255,255,0.7)' }} />}
-        </ListItem>
-        <Collapse in={openReports} timeout="auto" unmountOnExit>
-          <List component="div" disablePadding>
-            <ListItem
-              onClick={() => navigate('/reports')}
-              sx={{
-                pl: 4,
-                cursor: 'pointer',
-                bgcolor: isActive('/reports') ? 'rgba(255,255,255,0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-                borderRadius: 1,
-                mx: 1,
-                mb: 0.5,
-              }}
-            >
-              <ListItemIcon sx={{ color: isActive('/reports') ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
-                <Assessment fontSize="small" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Reports Dashboard" 
-                primaryTypographyProps={{
-                  fontSize: 14,
-                  color: isActive('/reports') ? '#fff' : 'rgba(255,255,255,0.6)',
-                }}
-              />
-            </ListItem>
-            <ListItem
-              onClick={() => navigate('/reports/stock')}
-              sx={{
-                pl: 4,
-                cursor: 'pointer',
-                bgcolor: location.pathname === '/reports/stock' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-                borderRadius: 1,
-                mx: 1,
-                mb: 0.5,
-              }}
-            >
-              <ListItemIcon sx={{ color: location.pathname === '/reports/stock' ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
-                <Inventory fontSize="small" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Stock Report" 
-                primaryTypographyProps={{
-                  fontSize: 14,
-                  color: location.pathname === '/reports/stock' ? '#fff' : 'rgba(255,255,255,0.6)',
-                }}
-              />
-            </ListItem>
-            <ListItem
-              onClick={() => navigate('/reports/profit')}
-              sx={{
-                pl: 4,
-                cursor: 'pointer',
-                bgcolor: location.pathname === '/reports/profit' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-                borderRadius: 1,
-                mx: 1,
-                mb: 0.5,
-              }}
-            >
-              <ListItemIcon sx={{ color: location.pathname === '/reports/profit' ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
-                <ShowChart fontSize="small" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Profit & Loss" 
-                primaryTypographyProps={{
-                  fontSize: 14,
-                  color: location.pathname === '/reports/profit' ? '#fff' : 'rgba(255,255,255,0.6)',
-                }}
-              />
-            </ListItem>
-            <ListItem
-              onClick={() => navigate('/reports/expenses')}
-              sx={{
-                pl: 4,
-                cursor: 'pointer',
-                bgcolor: location.pathname === '/reports/expenses' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-                borderRadius: 1,
-                mx: 1,
-                mb: 0.5,
-              }}
-            >
-              <ListItemIcon sx={{ color: location.pathname === '/reports/expenses' ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
-                <MoneyOff fontSize="small" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Expenses" 
-                primaryTypographyProps={{
-                  fontSize: 14,
-                  color: location.pathname === '/reports/expenses' ? '#fff' : 'rgba(255,255,255,0.6)',
-                }}
-              />
-            </ListItem>
-            <ListItem
-              onClick={() => navigate('/reports/physical-count')}
-              sx={{
-                pl: 4,
-                cursor: 'pointer',
-                bgcolor: location.pathname === '/reports/physical-count' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-                borderRadius: 1,
-                mx: 1,
-                mb: 0.5,
-              }}
-            >
-              <ListItemIcon sx={{ color: location.pathname === '/reports/physical-count' ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
-                <Checklist fontSize="small" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Physical Count" 
-                primaryTypographyProps={{
-                  fontSize: 14,
-                  color: location.pathname === '/reports/physical-count' ? '#fff' : 'rgba(255,255,255,0.6)',
-                }}
-              />
-            </ListItem>
-            <ListItem
-              onClick={() => navigate('/reports/trends')}
-              sx={{
-                pl: 4,
-                cursor: 'pointer',
-                bgcolor: location.pathname === '/reports/trends' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-                borderRadius: 1,
-                mx: 1,
-                mb: 0.5,
-              }}
-            >
-              <ListItemIcon sx={{ color: location.pathname === '/reports/trends' ? '#fff' : 'rgba(255,255,255,0.5)', minWidth: 36 }}>
-                <TrendingUp fontSize="small" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Trends" 
-                primaryTypographyProps={{
-                  fontSize: 14,
-                  color: location.pathname === '/reports/trends' ? '#fff' : 'rgba(255,255,255,0.6)',
-                }}
-              />
-            </ListItem>
-          </List>
-        </Collapse>
+        {/* Expenses */}
+        <NavLink to="/expenses" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`} onClick={handleNavClick}>
+          <CreditCard size={16} className={styles.navIcon} /> 
+          <span className={styles.navLabel}>Expenses</span>
+        </NavLink>
+
+        {/* Reports - Simplified */}
+        <div>
+          <button 
+            className={`${styles.navLinkExpandable} ${isReportsActive ? styles.navLinkActive : ''}`} 
+            onClick={() => setReportsOpen(!reportsOpen)}
+          >
+            <span className={styles.navLinkExpandableLabel}>
+              <BarChart3 size={16} className={styles.navIcon} /> 
+              <span className={styles.navLabel}>Reports</span>
+            </span>
+            <ChevronDown size={13} className={styles.chevron} data-open={reportsOpen} />
+          </button>
+          {reportsOpen && (
+            <div className={styles.subNav}>
+              <NavLink to="/reports" className={({ isActive }) => `${styles.subLink} ${isActive ? styles.subLinkActive : ''}`} onClick={handleNavClick}>
+                <BarChart3 size={14} /> Dashboard
+              </NavLink>
+            </div>
+          )}
+        </div>
 
         {/* Alerts */}
-        <ListItem
-          onClick={() => navigate('/alerts')}
-          sx={{
-            cursor: 'pointer',
-            bgcolor: isActive('/alerts') ? 'rgba(255,255,255,0.15)' : 'transparent',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-            borderRadius: 1,
-            mx: 1,
-            mb: 0.5,
-          }}
-        >
-          <ListItemIcon sx={{ color: isActive('/alerts') ? '#fff' : 'rgba(255,255,255,0.7)' }}>
-            <Notifications />
-          </ListItemIcon>
-          <ListItemText 
-            primary="Alerts" 
-            primaryTypographyProps={{
-              fontWeight: isActive('/alerts') ? 'bold' : 'normal',
-              color: isActive('/alerts') ? '#fff' : 'rgba(255,255,255,0.7)',
-            }}
-          />
-        </ListItem>
-
+        <NavLink to="/alerts" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`} onClick={handleNavClick}>
+          <AlertCircle size={16} className={styles.navIcon} /> 
+          <span className={styles.navLabel}>Alerts</span>
+        </NavLink>
+        
         {/* Settings */}
-        <ListItem
-          onClick={() => navigate('/settings')}
-          sx={{
-            cursor: 'pointer',
-            bgcolor: isActive('/settings') ? 'rgba(255,255,255,0.15)' : 'transparent',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-            borderRadius: 1,
-            mx: 1,
-            mb: 0.5,
-          }}
-        >
-          <ListItemIcon sx={{ color: isActive('/settings') ? '#fff' : 'rgba(255,255,255,0.7)' }}>
-            <Settings />
-          </ListItemIcon>
-          <ListItemText 
-            primary="Settings" 
-            primaryTypographyProps={{
-              fontWeight: isActive('/settings') ? 'bold' : 'normal',
-              color: isActive('/settings') ? '#fff' : 'rgba(255,255,255,0.7)',
-            }}
-          />
-        </ListItem>
-      </List>
-    </Drawer>
+        <NavLink to="/settings" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`} onClick={handleNavClick}>
+          <Settings size={16} className={styles.navIcon} /> 
+          <span className={styles.navLabel}>Settings</span>
+        </NavLink>
+      </nav>
+
+      <div className={styles.spacer} />
+
+      <div className={styles.divider} />
+
+      <button className={styles.logoutRow} onClick={handleLogout} title="Logout">
+        <LogOut size={15} />
+        <span className={styles.navLabel}>Logout</span>
+      </button>
+    </aside>
   );
-}
+};
+
+export default Sidebar;

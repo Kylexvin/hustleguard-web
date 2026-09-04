@@ -1,7 +1,17 @@
-import { createContext, useState, useRef, useEffect } from 'react';
+// src/contexts/AuthContext.jsx
+import { createContext, useState, useRef, useEffect, useContext } from 'react';
 import api from '../api/client';
 
 const AuthContext = createContext(null);
+
+// ✅ Add this hook
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
@@ -43,7 +53,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Add this method to manually set user (for registration)
   const setUserData = (userData) => {
     setUser(userData);
   };

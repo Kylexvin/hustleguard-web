@@ -29,6 +29,12 @@ export default function Products() {
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(null);
 
+  // Stock Modal State
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [stockQuantity, setStockQuantity] = useState(0);
+  const [addingStock, setAddingStock] = useState(false);
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -69,30 +75,61 @@ export default function Products() {
       }
     } catch (err) {
       console.error('Error deleting product:', err);
-      alert(err.response?.data?.message || 'Failed to delete product. Please remove stock first.');
+      alert(err.response?.data?.message || 'Failed to delete product.');
     } finally {
       setDeleting(null);
     }
   };
 
+  const handleAddStock = async () => {
+    if (stockQuantity <= 0) {
+      alert('Enter a valid quantity');
+      return;
+    }
+
+    try {
+      setAddingStock(true);
+      await axios.post(`/products/${selectedProduct._id}/stock`, {
+        quantity: stockQuantity
+      });
+      
+      setShowStockModal(false);
+      setStockQuantity(0);
+      setSelectedProduct(null);
+      fetchProducts();
+      alert('Stock added successfully!');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to add stock');
+    } finally {
+      setAddingStock(false);
+    }
+  };
+
+  const openStockModal = (product) => {
+    setSelectedProduct(product);
+    setStockQuantity(0);
+    setShowStockModal(true);
+  };
+
   // ============================================================
-  // Helpers
+  // Helpers for new model
   // ============================================================
   const getStock = (product) => {
-    return product.totalStock || product.quantity || 0;
+    return product.stock || 0;
   };
 
   const getBaseUnitLabel = (product) => {
-    return product.baseUnit?.label || product.unit || 'Unit';
+    const baseUnit = product.units?.find(u => u.isBase);
+    return baseUnit?.label || 'Unit';
   };
 
-  const getSellUnitsCount = (product) => {
-    return product.sellUnits?.filter(u => u.isActive !== false).length || 1;
+  const getBaseUnitPrice = (product) => {
+    const baseUnit = product.units?.find(u => u.isBase);
+    return baseUnit?.sellPrice || 0;
   };
 
-  const getPrimaryPrice = (product) => {
-    const baseUnit = product.sellUnits?.find(u => u.isBase);
-    return baseUnit?.sellPrice || product.sellingPrice || 0;
+  const getUnitsCount = (product) => {
+    return product.units?.filter(u => u.isActive !== false).length || 1;
   };
 
   const getStockStatus = (stock, minStock) => {
@@ -133,8 +170,7 @@ export default function Products() {
       filtered = filtered.filter(p => 
         p.name.toLowerCase().includes(term) ||
         p.category?.toLowerCase().includes(term) ||
-        p.sellUnits?.some(u => u.barcode?.includes(term)) ||
-        p.stockUnits?.some(u => u.barcode?.includes(term))
+        p.units?.some(u => u.barcode?.includes(term))
       );
     }
 
@@ -253,8 +289,8 @@ export default function Products() {
             const isLowStock = stock <= minStock && stock > 0;
             const isOutOfStock = stock === 0;
             const baseUnitLabel = getBaseUnitLabel(product);
-            const unitCount = getSellUnitsCount(product);
-            const primaryPrice = getPrimaryPrice(product);
+            const unitCount = getUnitsCount(product);
+            const primaryPrice = getBaseUnitPrice(product);
             
             return (
               <div 
@@ -266,9 +302,9 @@ export default function Products() {
                   <div className="product-name">
                     <h4>{product.name}</h4>
                     <span className="product-category">{product.category || 'Uncategorized'}</span>
-                    {product.sellUnits?.some(u => u.barcode) && (
+                    {product.units?.some(u => u.barcode) && (
                       <span className="product-barcode">
-                        {product.sellUnits.find(u => u.barcode)?.barcode}
+                        {product.units.find(u => u.barcode)?.barcode}
                       </span>
                     )}
                   </div>
@@ -311,8 +347,8 @@ export default function Products() {
                   <div className="product-price-info">
                     <span className="selling-price">KES {primaryPrice}</span>
                     {unitCount > 1 && (
-                      <span className="unit-count" title="Multiple sell unit available">
-                        <FontAwesomeIcon icon={faTags} /> {unitCount} unit
+                      <span className="unit-count" title="Multiple units available">
+                        <FontAwesomeIcon icon={faTags} /> {unitCount} units
                       </span>
                     )}
                   </div>
@@ -329,10 +365,10 @@ export default function Products() {
                     </button>
                     <button 
                       className="stock-btn"
-                      onClick={() => navigate(`/products/${product._id}/stock`)}
-                      title="Manage Stock"
+                      onClick={() => openStockModal(product)}
+                      title="Add Stock"
                     >
-                      <FontAwesomeIcon icon={faLayerGroup} /> Stock
+                      <FontAwesomeIcon icon={faLayerGroup} /> Add Stock
                     </button>
                   </div>
                 </div>
@@ -346,6 +382,65 @@ export default function Products() {
       <button className="products-fab" onClick={() => navigate('/products/add')}>
         <FontAwesomeIcon icon={faPlus} />
       </button>
+
+      {/* Stock Modal */}
+      {showStockModal && selectedProduct && (
+        <div className="stock-modal-overlay" onClick={() => setShowStockModal(false)}>
+          <div className="stock-modal" onClick={e => e.stopPropagation()}>
+            <div className="stock-modal-header">
+              <h3>Add Stock - {selectedProduct.name}</h3>
+              <button className="stock-modal-close" onClick={() => setShowStockModal(false)}>
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+            <div className="stock-modal-body">
+              <div className="stock-info-row">
+                <span className="stock-info-label">Current Stock</span>
+                <span className="stock-info-value">
+                  {getStock(selectedProduct)} {getBaseUnitLabel(selectedProduct)}
+                </span>
+              </div>
+              <div className="stock-info-row">
+                <span className="stock-info-label">Base Unit</span>
+                <span className="stock-info-value">{getBaseUnitLabel(selectedProduct)}</span>
+              </div>
+              <div className="form-group">
+                <label>Add Quantity</label>
+                <input
+                  type="number"
+                  placeholder={getStock(selectedProduct)}
+                  value={stockQuantity}
+                  onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)}
+                  min="0"
+                  autoFocus
+                />
+              </div>
+              <div className="stock-info-row new-stock-row">
+                <span className="stock-info-label">New Stock</span>
+                <span className="stock-info-value highlight">
+                  {getStock(selectedProduct) + stockQuantity} {getBaseUnitLabel(selectedProduct)}
+                </span>
+              </div>
+            </div>
+            <div className="stock-modal-footer">
+              <button className="cancel-btn" onClick={() => setShowStockModal(false)}>
+                Cancel
+              </button>
+              <button 
+                className="confirm-btn" 
+                onClick={handleAddStock}
+                disabled={addingStock || stockQuantity <= 0}
+              >
+                {addingStock ? (
+                  <><FontAwesomeIcon icon={faSpinner} spin /> Adding...</>
+                ) : (
+                  'Add Stock'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

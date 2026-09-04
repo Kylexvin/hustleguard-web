@@ -43,6 +43,7 @@ export default function SaleDetails() {
   }, [fetchSale]);
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleString('en-KE', {
       day: '2-digit',
@@ -55,7 +56,16 @@ export default function SaleDetails() {
   };
 
   const formatCurrency = (amount) => {
-    return `KES ${amount.toFixed(2)}`;
+    return `KES ${(amount || 0).toFixed(2)}`;
+  };
+
+  const getUnitLabel = (item) => {
+    return item.unit?.label || item.unitSold?.label || 'Unit';
+  };
+
+  const getBaseLabel = (item) => {
+    if (item.unit?.isBase) return item.unit.label;
+    return 'units';
   };
 
   const handlePrint = () => {
@@ -115,7 +125,7 @@ export default function SaleDetails() {
               {sale.paymentStatus === 'paid' ? (
                 <><CheckCircle size={14} /> Paid</>
               ) : (
-                <><AlertTriangle size={14} /> Pending</>
+                <><AlertTriangle size={14} /> {sale.paymentStatus || 'Pending'}</>
               )}
             </span>
           </div>
@@ -160,7 +170,7 @@ export default function SaleDetails() {
         {/* Items Table */}
         <div className="sale-details-items">
           <h3>
-            <Package size={16} /> Items ({sale.items.length})
+            <Package size={16} /> Items ({sale.items?.length || 0})
           </h3>
           <table className="sale-items-table">
             <thead>
@@ -173,13 +183,13 @@ export default function SaleDetails() {
               </tr>
             </thead>
             <tbody>
-              {sale.items.map((item, index) => (
+              {sale.items?.map((item, index) => (
                 <tr key={index}>
                   <td className="item-name-cell">
                     <span className="item-name">{item.productName}</span>
-                    <span className="item-base">({item.quantityInBase} {item.productId?.baseUnit?.label || 'units'})</span>
+                    <span className="item-base">({item.quantityInBase} {getBaseLabel(item)})</span>
                   </td>
-                  <td className="item-unit-cell">{item.unitSold.label}</td>
+                  <td className="item-unit-cell">{getUnitLabel(item)}</td>
                   <td className="text-center">{item.quantity}</td>
                   <td className="text-right">{formatCurrency(item.unitPrice)}</td>
                   <td className="text-right">{formatCurrency(item.totalPrice)}</td>

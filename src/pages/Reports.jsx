@@ -1,3 +1,4 @@
+// src/pages/Reports.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -7,13 +8,13 @@ import {
   faBoxes, 
   faCoins, 
   faMoneyBillWave,
-  faClipboardCheck,
   faArrowTrendUp,
   faDownload,
-  faEye,
+
   faSpinner,
-  faCalendarAlt,
-  faChevronRight
+ 
+  faChevronRight,
+  faReceipt
 } from '@fortawesome/free-solid-svg-icons';
 import './css/Reports.css';
 
@@ -21,7 +22,6 @@ export default function Reports() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
-  const [recentReports, setRecentReports] = useState([]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -30,15 +30,41 @@ export default function Reports() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const stockRes = await axios.get('/reports/stock/value');
-      const reportsRes = await axios.get('/reports/stock/weekly', {
-        params: { limit: 5 }
-      });
       
-      setSummary(stockRes.data.data || {});
-      setRecentReports(reportsRes.data.data || []);
+      // Fetch dashboard stats
+      const statsRes = await axios.get('/dashboard/stats');
+      const statsData = statsRes.data.data || {};
+      
+      // Fetch expense summary
+      const expenseRes = await axios.get('/expenses/summary');
+      const expenseData = expenseRes.data.data || {};
+      
+      setSummary({
+        inventoryValue: statsData.inventoryValue || 0,
+        totalProducts: statsData.totalProducts || 0,
+        totalExpenses: expenseData.summary?.totalAmount || 0,
+        expenseCount: expenseData.summary?.count || 0,
+        weeklySales: statsData.weeklySales || 0,
+        weeklyProfit: statsData.weeklyGrossProfit || 0,
+        monthlySales: statsData.monthlySales || 0,
+        monthlyProfit: statsData.monthlyProfit || 0,
+        lowStockCount: statsData.lowStockCount || 0,
+        outOfStockCount: statsData.outOfStockCount || 0
+      });
     } catch (error) {
       console.error('Error fetching report data:', error);
+      setSummary({
+        inventoryValue: 0,
+        totalProducts: 0,
+        totalExpenses: 0,
+        expenseCount: 0,
+        weeklySales: 0,
+        weeklyProfit: 0,
+        monthlySales: 0,
+        monthlyProfit: 0,
+        lowStockCount: 0,
+        outOfStockCount: 0
+      });
     } finally {
       setLoading(false);
     }
@@ -51,8 +77,8 @@ export default function Reports() {
       icon: faBoxes,
       color: '#2E7D32',
       bgColor: '#E8F5E9',
-      description: 'Opening stock, sales, closing stock & variances',
-      path: '/reports/stock'
+      description: 'View current stock levels, low stock alerts, and inventory value',
+      path: '/products'
     },
     {
       id: 'profit',
@@ -60,8 +86,8 @@ export default function Reports() {
       icon: faChartLine,
       color: '#1565C0',
       bgColor: '#E3F2FD',
-      description: 'Sales → COGS → Gross Profit → Expenses → Net Profit',
-      path: '/reports/profit'
+      description: 'Sales revenue, costs, and profit analysis',
+      path: '/sales'
     },
     {
       id: 'expenses',
@@ -70,25 +96,16 @@ export default function Reports() {
       color: '#E65100',
       bgColor: '#FFF3E0',
       description: 'Track all business expenses by category',
-      path: '/reports/expenses'
-    },
-    {
-      id: 'physical',
-      title: 'Physical Count',
-      icon: faClipboardCheck,
-      color: '#6A1B9A',
-      bgColor: '#F3E5F5',
-      description: 'System stock vs physically counted stock',
-      path: '/reports/physical-count'
+      path: '/expenses'
     },
     {
       id: 'trends',
       title: 'Trends',
-      icon:  faArrowTrendUp,
+      icon: faArrowTrendUp,
       color: '#00838F',
       bgColor: '#E0F7FA',
-      description: 'Weekly/monthly sales and profit trends',
-      path: '/reports/trends'
+      description: 'Weekly and monthly sales, revenue, and profit trends',
+      path: '/sales'
     }
   ];
 
@@ -100,6 +117,10 @@ export default function Reports() {
       </div>
     );
   }
+
+  const formatCurrency = (amount) => {
+    return `KES ${(amount || 0).toLocaleString()}`;
+  };
 
   return (
     <div className="reports-container">
@@ -118,35 +139,35 @@ export default function Reports() {
             <FontAwesomeIcon icon={faCoins} />
           </div>
           <div className="stat-content">
-            <span className="stat-label">Total Stock Value</span>
-            <span className="stat-value">KES {summary?.totalStockValue?.toLocaleString() || 0}</span>
+            <span className="stat-label">Inventory Value</span>
+            <span className="stat-value">{formatCurrency(summary?.inventoryValue || 0)}</span>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-icon" style={{ backgroundColor: '#E3F2FD', color: '#1565C0' }}>
-            <FontAwesomeIcon icon={faBoxes} />
+            <FontAwesomeIcon icon={faChartLine} />
           </div>
           <div className="stat-content">
-            <span className="stat-label">Total Products</span>
-            <span className="stat-value">{summary?.totalItems || 0}</span>
+            <span className="stat-label">Weekly Sales</span>
+            <span className="stat-value">{formatCurrency(summary?.weeklySales || 0)}</span>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-icon" style={{ backgroundColor: '#FFF3E0', color: '#E65100' }}>
-            <FontAwesomeIcon icon={faCalendarAlt} />
+            <FontAwesomeIcon icon={faReceipt} />
           </div>
           <div className="stat-content">
-            <span className="stat-label">Reports Generated</span>
-            <span className="stat-value">{recentReports.length}</span>
+            <span className="stat-label">Monthly Sales</span>
+            <span className="stat-value">{formatCurrency(summary?.monthlySales || 0)}</span>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#F3E5F5', color: '#6A1B9A' }}>
-            <FontAwesomeIcon icon={faChartLine} />
+          <div className="stat-icon" style={{ backgroundColor: '#E0F7FA', color: '#00838F' }}>
+            <FontAwesomeIcon icon={faBoxes} />
           </div>
           <div className="stat-content">
-            <span className="stat-label">Avg Value/Item</span>
-            <span className="stat-value">KES {summary?.averageValuePerItem?.toLocaleString() || 0}</span>
+            <span className="stat-label">Low Stock Items</span>
+            <span className="stat-value">{summary?.lowStockCount || 0}</span>
           </div>
         </div>
       </div>
@@ -172,42 +193,6 @@ export default function Reports() {
           </div>
         ))}
       </div>
-
-      {/* Recent Reports */}
-      {recentReports.length > 0 && (
-        <div className="recent-reports">
-          <h3>Recent Reports</h3>
-          <div className="recent-reports-list">
-            {recentReports.map((report) => (
-              <div 
-                key={report._id} 
-                className="recent-report-item"
-                onClick={() => navigate(`/reports/stock/${report._id}`)}
-              >
-                <div className="recent-report-info">
-                  <span className="recent-report-week">
-                    Week {report.weekNumber}, {report.year}
-                  </span>
-                  <span className="recent-report-date">
-                    {new Date(report.weekStartDate).toLocaleDateString()} - {new Date(report.weekEndDate).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="recent-report-status">
-                  <span className={`status-badge ${report.status}`}>
-                    {report.status}
-                  </span>
-                  <span className="recent-report-items">
-                    {report.items?.length || 0} items
-                  </span>
-                </div>
-                <button className="view-report-btn">
-                  <FontAwesomeIcon icon={faEye} /> View
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
