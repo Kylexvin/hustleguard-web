@@ -90,14 +90,14 @@ function AppRoutes() {
         <ProtectedRoute>
           <Layout />
         </ProtectedRoute>
-      }>
+      }> 
+
         <Route index element={<Dashboard />} />
         <Route path="products" element={<Products />} />
         <Route path="products/add" element={<AddProduct />} />       
         <Route path="products/edit/:id" element={<AddProduct />} />  
         <Route path="/products/:id/stock" element={<ProductStock />} />
         <Route path="/stock-monitor" element={<StockMonitor />} />
-        
         
         {/* Report Routes */}
         <Route path="reports" element={<Reports />} />
