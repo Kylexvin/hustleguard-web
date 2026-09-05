@@ -27,6 +27,7 @@ import NotFound from './pages/NotFound.jsx';
 import Categories from './pages/Categories';
 import Expenses from './pages/expenses/Expenses';
 import AddExpense from './pages/expenses/AddExpense';
+import StockMonitor from './pages/StockMonitor.jsx';
 
 import axios from 'axios';
 
@@ -95,6 +96,8 @@ function AppRoutes() {
         <Route path="products/add" element={<AddProduct />} />       
         <Route path="products/edit/:id" element={<AddProduct />} />  
         <Route path="/products/:id/stock" element={<ProductStock />} />
+        <Route path="/stock-monitor" element={<StockMonitor />} />
+        
         
         {/* Report Routes */}
         <Route path="reports" element={<Reports />} />

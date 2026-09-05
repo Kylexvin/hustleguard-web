@@ -1,0 +1,253 @@
+/* src/pages/css/StockMonitor.css */
+
+.stock-monitor {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.stock-monitor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.stock-monitor-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #10241a;
+}
+
+.stock-monitor-header .date {
+  display: block;
+  font-size: 14px;
+  color: #5f7c6d;
+  margin-top: 4px;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #fff;
+  border: 1px solid #dcece2;
+  border-radius: 10px;
+  color: #10241a;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  border-color: #1a7f4e;
+  color: #1a7f4e;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.stock-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid #dcece2;
+  border-radius: 12px;
+}
+
+.summary-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.summary-label {
+  font-size: 13px;
+  color: #5f7c6d;
+}
+
+.summary-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #10241a;
+}
+
+.stock-search {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.stock-search .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #5f7c6d;
+}
+
+.stock-search input {
+  width: 100%;
+  padding: 10px 12px 10px 38px;
+  border: 1.5px solid #dcece2;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+.stock-search input:focus {
+  border-color: #1a7f4e;
+}
+
+.stock-table-wrapper {
+  background: #fff;
+  border: 1px solid #dcece2;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.stock-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.stock-table thead {
+  background: #f4faf6;
+}
+
+.stock-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #5f7c6d;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.stock-table td {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #10241a;
+  border-top: 1px solid #dcece2;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.product-name {
+  font-weight: 500;
+}
+
+.sold-today {
+  color: #1a7f4e;
+  font-weight: 600;
+}
+
+.current-stock {
+  font-weight: 600;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.in {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.low {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.status-badge.out {
+  background: #fdeceb;
+  color: #c0392b;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-state svg {
+  color: #dcece2;
+  margin-bottom: 12px;
+}
+
+.empty-state p {
+  color: #5f7c6d;
+  font-size: 14px;
+}
+
+.stock-monitor-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: #5f7c6d;
+}
+
+.stock-monitor-loading .spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #dcece2;
+  border-top-color: #1a7f4e;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+  .stock-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stock-monitor-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .stock-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .stock-table {
+    min-width: 600px;
+  }
+}

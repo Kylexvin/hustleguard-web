@@ -4,8 +4,9 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, ShoppingCart, Package, Receipt, 
   Settings, LogOut, ChevronDown, BarChart3, 
-   Plus, List as ListIcon, 
-  FolderOpen, CreditCard, AlertCircle
+  Plus, List as ListIcon, 
+  FolderOpen, CreditCard, AlertCircle, 
+  Eye  
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import styles from './css/Sidebar.module.css';
@@ -27,7 +28,8 @@ const Sidebar = ({ isMobile, onClose }) => {
   };
 
   const isProductsActive = location.pathname.startsWith('/products') || 
-                          location.pathname === '/categories';
+                          location.pathname === '/categories' ||
+                          location.pathname === '/stock-monitor';  // ✅ ADD THIS
 
   const isReportsActive = location.pathname.startsWith('/reports') ||
                           location.pathname === '/expenses';
@@ -71,6 +73,10 @@ const Sidebar = ({ isMobile, onClose }) => {
               </NavLink>
               <NavLink to="/categories" className={({ isActive }) => `${styles.subLink} ${isActive ? styles.subLinkActive : ''}`} onClick={handleNavClick}>
                 <FolderOpen size={14} /> Categories
+              </NavLink>
+            
+              <NavLink to="/stock-monitor" className={({ isActive }) => `${styles.subLink} ${isActive ? styles.subLinkActive : ''}`} onClick={handleNavClick}>
+                <Eye size={14} /> Stock Monitor
               </NavLink>
             </div>
           )}
