@@ -400,3 +400,187 @@
     display: none;
   }
 }
+.stock-monitor-header .header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: #055a05;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.primary-btn:hover {
+  background: #168c0b;
+}
+
+/* On small screens, show only the icon */
+@media (max-width: 640px) {
+  .primary-btn .label {
+    display: none;
+  }
+  .primary-btn {
+    padding: 10px 12px;
+  }
+}
+/* Header date — basedOn tag */
+.stock-monitor-header .based-on {
+  color: var(--pos-green-600);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+/* POS / Unrecorded cell */
+.stock-table td.pos-unrec {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stock-table td.pos-unrec .pos {
+  color: var(--pos-green-600);
+}
+
+.stock-table td.pos-unrec .sep {
+  color: var(--pos-text-muted);
+  margin: 0 4px;
+  font-weight: 400;
+}
+
+.stock-table td.pos-unrec .unrec {
+  color: var(--pos-warn);
+}
+
+.stock-table td.pos-unrec .unrec.zero {
+  color: var(--pos-text-muted);
+  font-weight: 500;
+}
+
+/* Muted span inside summary values */
+.summary-value .muted {
+  color: var(--pos-text-muted);
+  font-weight: 600;
+  font-size: 0.85em;
+}
+
+/* Slightly tighten the table on desktop with the extra columns */
+.stock-table thead th:nth-child(4),
+.stock-table td:nth-child(4) {
+  color: var(--pos-green-700);
+}
+
+/* Mobile: hide Category + Received columns to save space */
+@media (max-width: 768px) {
+  .stock-table thead th:nth-child(2),
+  .stock-table td.category,
+  .stock-table thead th:nth-child(4),
+  .stock-table td:nth-child(4) {
+    display: none;
+  }
+}
+/* Draft banner */
+.draft-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--pos-warn-soft);
+  border: 1px solid #f0d68a;
+  color: #8a6410;
+  flex-wrap: wrap;
+}
+
+.draft-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.draft-banner-left svg { flex-shrink: 0; }
+
+.draft-banner-left div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.draft-banner-left strong {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.draft-banner-left span {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.draft-resume-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  background: #fff;
+  color: #8a6410;
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(138, 100, 16, 0.2);
+  flex-shrink: 0;
+}
+
+.draft-resume-btn:hover {
+  background: #fffbe9;
+}
+
+/* Small hint under summary value */
+.summary-hint {
+  font-size: 10px;
+  color: var(--pos-text-muted);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 640px) {
+  .draft-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .draft-resume-btn { width: 100%; justify-content: center; }
+}
+/* No-baseline info banner */
+.no-baseline-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--pos-green-50);
+  border: 1px solid var(--pos-green-100);
+  color: var(--pos-green-700);
+}
+
+.no-baseline-banner svg { flex-shrink: 0; margin-top: 1px; }
+
+.no-baseline-banner > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.no-baseline-banner strong { font-size: 13.5px; font-weight: 700; }
+.no-baseline-banner span   { font-size: 12px; opacity: 0.85; }

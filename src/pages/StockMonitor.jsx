@@ -1,10 +1,19 @@
 // src/pages/StockMonitor.jsx
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Search, RefreshCw, Package, TrendingUp, TrendingDown } from 'lucide-react';
+import {
+  Search, RefreshCw, Package, TrendingUp, 
+  ClipboardCheck, CircleDollarSign, AlertCircle, ArrowRight
+} from 'lucide-react';
 import './css/StockMonitor.css';
 
+// Render dash for null/undefined, otherwise the number
+const fmtNum = (n) => (n === null || n === undefined ? '—' : n);
+
+
 export default function StockMonitor() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [search, setSearch] = useState('');
@@ -30,7 +39,6 @@ export default function StockMonitor() {
 
   useEffect(() => {
     fetchData();
-    // Auto-refresh every 60 seconds
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -49,24 +57,71 @@ export default function StockMonitor() {
     p.category?.toLowerCase().includes(search.toLowerCase())
   ) || [];
 
+  const hasDraft = data?.hasDraft;
+  const hasBaseline = data?.summary?.hasBaseline;
+  const summary = data?.summary;
+
   return (
     <div className="stock-monitor">
       {/* Header */}
       <div className="stock-monitor-header">
         <div>
           <h2>Stock Monitor</h2>
-          <span className="date">{new Date(data?.date).toLocaleDateString('en-KE', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}</span>
+          <span className="date">
+            {new Date(data?.date).toLocaleDateString('en-KE', {
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            })}
+            {data?.basedOn && <span className="based-on"> · {data.basedOn}</span>}
+          </span>
         </div>
-        <button className="refresh-btn" onClick={refresh} disabled={refreshing}>
-          <RefreshCw size={18} className={refreshing ? 'spin' : ''} />
-          {refreshing ? 'Refreshing...' : 'Refresh'}
-        </button>
+        <div className="header-actions">
+          <button className="refresh-btn" onClick={refresh} disabled={refreshing}>
+            <RefreshCw size={18} className={refreshing ? 'spin' : ''} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button className="primary-btn" onClick={() => navigate('/stock-count')}>
+            <ClipboardCheck size={18} />
+            <span className="label">Start Stock Count</span>
+          </button>
+        </div>
       </div>
+
+      {/* Draft banner */}
+      {hasDraft && (
+        <div className="draft-banner">
+          <div className="draft-banner-left">
+            <AlertCircle size={18} />
+            <div>
+              <strong>Stock count in progress</strong>
+              <span>
+                You have an unconfirmed count from{' '}
+                {new Date(data.draftPeriod?.start).toLocaleDateString()} →{' '}
+                {new Date(data.draftPeriod?.end).toLocaleDateString()}. Confirm it to update the monitor.
+              </span>
+            </div>
+          </div>
+          <button
+            className="draft-resume-btn"
+            onClick={() => navigate('/stock-count')}
+          >
+            Resume <ArrowRight size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* No-baseline info banner */}
+      {!hasBaseline && !hasDraft && (
+        <div className="no-baseline-banner">
+          <AlertCircle size={18} />
+          <div>
+            <strong>No confirmed stock count yet</strong>
+            <span>
+              Opening stock and sold quantities will appear after you confirm your first count.
+              Current stock below is live and accurate.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="stock-summary">
@@ -76,7 +131,9 @@ export default function StockMonitor() {
           </div>
           <div>
             <div className="summary-label">Opening Stock</div>
-            <div className="summary-value">{data?.summary?.totalOpeningStock || 0}</div>
+            <div className="summary-value">
+              {hasBaseline ? summary.totalOpeningStock : '—'}
+            </div>
           </div>
         </div>
         <div className="summary-card">
@@ -85,7 +142,9 @@ export default function StockMonitor() {
           </div>
           <div>
             <div className="summary-label">Sold Today</div>
-            <div className="summary-value">{data?.summary?.totalSoldToday || 0}</div>
+            <div className="summary-value">
+              {hasBaseline ? summary.totalSoldToday : '—'}
+            </div>
           </div>
         </div>
         <div className="summary-card">
@@ -94,16 +153,20 @@ export default function StockMonitor() {
           </div>
           <div>
             <div className="summary-label">Current Stock</div>
-            <div className="summary-value">{data?.summary?.totalCurrentStock || 0}</div>
+            <div className="summary-value">{summary.totalCurrentStock || 0}</div>
           </div>
         </div>
         <div className="summary-card">
           <div className="summary-icon" style={{ background: '#F3E5F5', color: '#6A1B9A' }}>
-            <TrendingDown size={20} />
+            <CircleDollarSign size={20} />
           </div>
           <div>
-            <div className="summary-label">Products with Sales</div>
-            <div className="summary-value">{data?.summary?.productsWithSales || 0}</div>
+            <div className="summary-label">POS / Unrecorded</div>
+            <div className="summary-value">
+              {summary.totalSoldPos || 0}
+              <span className="muted"> / {hasBaseline ? summary.totalUnrecorded : '—'}</span>
+            </div>
+            <div className="summary-hint">recorded / missed</div>
           </div>
         </div>
       </div>
@@ -126,23 +189,25 @@ export default function StockMonitor() {
             <tr>
               <th>Product</th>
               <th>Category</th>
-              <th className="text-right">Opening Stock</th>
-              <th className="text-right">Sold Today</th>
-              <th className="text-right">Current Stock</th>
+              <th className="text-right">Opening</th>
+              <th className="text-right">Received</th>
+              <th className="text-right">Sold</th>
+              <th className="text-right">POS / Unrec.</th>
+              <th className="text-right">Current</th>
               <th className="text-right">Status</th>
             </tr>
           </thead>
           <tbody>
             {filteredProducts.length === 0 ? (
               <tr>
-                <td colSpan="6" className="empty-state">
+                <td colSpan="8" className="empty-state">
                   <Package size={32} />
                   <p>No products found</p>
                 </td>
               </tr>
             ) : (
               filteredProducts.map((product) => {
-                const stockLevel = product.currentStock / product.minStockAlert;
+                const stockLevel = product.currentStock / (product.minStockAlert || 5);
                 let status = 'In Stock';
                 let statusClass = 'in';
                 if (product.currentStock === 0) {
@@ -157,13 +222,25 @@ export default function StockMonitor() {
                   <tr key={product._id}>
                     <td className="product-name">{product.name}</td>
                     <td className="category">{product.category || '—'}</td>
-                    <td className="text-right">{product.openingStock}</td>
-                    <td className="text-right sold-today">{product.soldToday > 0 ? `+${product.soldToday}` : '0'}</td>
+                    <td className="text-right">
+                      {fmtNum(product.openingStock)}
+                    </td>
+                    <td className="text-right">
+                      {product.receivedToday > 0 ? `+${product.receivedToday}` : '0'}
+                    </td>
+                    <td className="text-right sold-today">
+                      {fmtNum(product.soldToday)}
+                    </td>
+                    <td className="text-right pos-unrec">
+                      <span className="pos">{product.soldTodayPos}</span>
+                      <span className="sep">/</span>
+                      <span className={product.unrecordedToday > 0 ? 'unrec' : 'unrec zero'}>
+                        {fmtNum(product.unrecordedToday)}
+                      </span>
+                    </td>
                     <td className="text-right current-stock">{product.currentStock}</td>
                     <td className="text-right">
-                      <span className={`status-badge ${statusClass}`}>
-                        {status}
-                      </span>
+                      <span className={`status-badge ${statusClass}`}>{status}</span>
                     </td>
                   </tr>
                 );
