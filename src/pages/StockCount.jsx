@@ -1,4 +1,3 @@
-// src/pages/StockCount.jsx
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -28,7 +27,6 @@ export default function StockCount() {
   const navigate = useNavigate();
   const today = new Date().toISOString().split('T')[0];
 
-  const [periodStart, setPeriodStart] = useState(today);
   const [periodEnd, setPeriodEnd] = useState(today);
 
   const [loading, setLoading] = useState(true);
@@ -53,10 +51,9 @@ export default function StockCount() {
       try {
         setLoading(true);
         const res = await axios.get('/stock-counts/latest-draft');
-        const existing = res.data.data;
+        const existing = res.data.stockCount;
         if (existing) {
           setDraft(existing);
-          setPeriodStart(existing.periodStart?.slice(0, 10) || today);
           setPeriodEnd(existing.periodEnd?.slice(0, 10) || today);
           setResuming(true);
         }
@@ -76,8 +73,8 @@ export default function StockCount() {
     try {
       setLoading(true);
       setError(null);
-      const res = await axios.post('/stock-counts/draft', { periodStart, periodEnd });
-      setDraft(res.data.data);
+      const res = await axios.post('/stock-counts/draft', { periodEnd });
+      setDraft(res.data.stockCount);
       setResuming(false);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to start');
@@ -97,7 +94,6 @@ export default function StockCount() {
       await axios.delete(`/stock-counts/${draft._id}`);
       setDraft(null);
       setResuming(false);
-      setPeriodStart(today);
       setPeriodEnd(today);
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to discard');
@@ -107,7 +103,7 @@ export default function StockCount() {
   };
 
   // ============================================================
-  // Save a single product's count
+  // Save a single product's count — returns the fresh draft
   // ============================================================
   const saveItemCount = async (productId, physicalStock, adjustments) => {
     if (!draft) return;
@@ -118,7 +114,8 @@ export default function StockCount() {
         physicalStock,
         adjustments: adjustments || []
       });
-      setDraft(res.data.data);
+      setDraft(res.data.stockCount);
+      return res.data.stockCount;
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to save count');
     } finally {
@@ -274,8 +271,8 @@ export default function StockCount() {
             <div className="review-note">
               <AlertCircle size={16} />
               <span>
-                {items.length - countedItems.length} product(s) were not counted. Confirming will
-                leave their current stock unchanged but they won't be part of this reconciliation.
+                {items.length - countedItems.length} product(s) weren't counted this round —
+                their stock stays as-is and they'll carry over into your next count.
               </span>
             </div>
           )}
@@ -284,7 +281,11 @@ export default function StockCount() {
             <button className="outline-btn" onClick={() => setReviewMode(false)}>
               Keep counting
             </button>
-            <button className="primary-btn" onClick={confirmCount} disabled={saving}>
+            <button
+              className="primary-btn"
+              onClick={confirmCount}
+              disabled={saving || countedItems.length === 0}
+            >
               <ClipboardCheck size={18} />
               {saving ? 'Confirming…' : 'Confirm & Save'}
             </button>
@@ -345,20 +346,12 @@ export default function StockCount() {
         <div className="period-card">
           <div className="period-card-title">
             <ClipboardCheck size={18} />
-            <span>Choose reconciliation period</span>
+            <span>Choose reconciliation end date</span>
           </div>
 
           <div className="period-row">
             <div className="field">
-              <label>Start</label>
-              <input
-                type="date"
-                value={periodStart}
-                onChange={(e) => setPeriodStart(e.target.value)}
-              />
-            </div>
-            <div className="field">
-              <label>End</label>
+              <label>Count as of</label>
               <input
                 type="date"
                 value={periodEnd}
@@ -370,7 +363,7 @@ export default function StockCount() {
           <button
             className="primary-btn full"
             onClick={startCount}
-            disabled={loading || !periodStart || !periodEnd}
+            disabled={loading || !periodEnd}
           >
             {loading ? 'Starting…' : 'Begin Count'}
           </button>
@@ -561,10 +554,10 @@ export default function StockCount() {
           onSave={async (adjustments) => {
             const val = Number(inputValue);
             const physical = isNaN(val) ? 0 : val;
-            await saveItemCount(adjustModal.productId, physical, adjustments);
+            const updatedDraft = await saveItemCount(adjustModal.productId, physical, adjustments);
             setAdjustModal(null);
-            if (adjustModal.keepCounterOpen) {
-              const updated = draft.items.find(
+            if (adjustModal.keepCounterOpen && updatedDraft) {
+              const updated = updatedDraft.items.find(
                 i => i.productId === adjustModal.productId
               );
               if (updated) setSelectedItem(updated);
