@@ -30,7 +30,8 @@ export default function Sales() {
   const [stats, setStats] = useState({
     today: { totalSales: 0, totalRevenue: 0, totalProfit: 0 },
     month: { totalSales: 0, totalRevenue: 0, totalProfit: 0 },
-    topProducts: []
+    topProducts: [],
+    offPos: { revenue: 0, profit: 0, units: 0 }
   });
   const [loading, setLoading] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -64,7 +65,8 @@ export default function Sales() {
       const statsData = response.data.data || { 
         today: { totalSales: 0, totalRevenue: 0, totalProfit: 0 }, 
         month: { totalSales: 0, totalRevenue: 0, totalProfit: 0 }, 
-        topProducts: [] 
+        topProducts: [],
+        offPos: { revenue: 0, profit: 0, units: 0 }
       };
       setStats(statsData);
     } catch (err) {
@@ -259,6 +261,28 @@ export default function Sales() {
             <span className="sales-stat-label">Today's Profit</span>
             <span className="sales-stat-value">
               {loadingStats ? '...' : formatCurrency(stats.today?.totalProfit || 0)}
+            </span>
+          </div>
+        </div>
+        <div className="sales-stat-card">
+          <div className="sales-stat-icon sales-icon-profit">
+            <FontAwesomeIcon icon={faCoins} />
+          </div>
+          <div className="sales-stat-content">
+            <span className="sales-stat-label">Off-POS Profit</span>
+            <span className="sales-stat-value">
+              {loadingStats ? '...' : formatCurrency(stats.offPos?.profit || 0)}
+            </span>
+          </div>
+        </div>
+        <div className="sales-stat-card">
+          <div className="sales-stat-icon sales-icon-revenue">
+            <FontAwesomeIcon icon={faMoneyBillWave} />
+          </div>
+          <div className="sales-stat-content">
+            <span className="sales-stat-label">Off-POS Revenue</span>
+            <span className="sales-stat-value">
+              {loadingStats ? '...' : formatCurrency(stats.offPos?.revenue || 0)}
             </span>
           </div>
         </div>

@@ -69,9 +69,9 @@ export default function StockMonitor() {
         </div>
         <div className="header-actions">
           <button
-            className="count-stock-btn"
-            onClick={() => navigate(meta?.hasDraft ? `/stock-count/${meta.draftId}` : '/stock-count')}
-          >
+  className="count-stock-btn"
+  onClick={() => navigate('/stock-count')}
+>
             <ClipboardList size={18} />
             {meta?.hasDraft ? 'Continue Count' : 'Count Stock'}
           </button>

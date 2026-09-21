@@ -584,3 +584,55 @@
 
 .no-baseline-banner strong { font-size: 13.5px; font-weight: 700; }
 .no-baseline-banner span   { font-size: 12px; opacity: 0.85; }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.count-stock-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 11px;
+  background: var(--pos-green-600);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--nm-raised-accent);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.05s;
+  white-space: nowrap;
+}
+
+.count-stock-btn:hover:not(:disabled) {
+  background: var(--pos-green-700);
+  box-shadow: var(--nm-raised-hover);
+}
+
+.count-stock-btn:active:not(:disabled) {
+  box-shadow: var(--nm-inset);
+  transform: translateY(1px);
+}
+
+.count-stock-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.count-stock-btn svg {
+  flex-shrink: 0;
+}
+
+/* Mobile — icon only */
+@media (max-width: 640px) {
+  .count-stock-btn {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .count-stock-btn .label {
+    display: none;
+  }
+}
