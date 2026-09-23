@@ -1,122 +1,23 @@
-/* Dashboard.css - Only font size fixes */
-/* Summary Stats Row - New compact stats */
-.summary-stats-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 12px;
-  padding: 10px 12px;
-}
+/* Dashboard.css — redesigned with clear hierarchy */
 
-.summary-stat-item {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.summary-stat-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.15);
-  color: #FFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  flex-shrink: 0;
-}
-
-.summary-stat-content {
-  min-width: 0;
-  flex: 1;
-}
-
-.summary-stat-value {
-  font-size: 13px;
-  font-weight: 700;
-  color: #FFF;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.summary-stat-label {
-  font-size: 9px;
-  color: rgba(255,255,255,0.7);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Desktop */
-@media (min-width: 769px) {
-  .summary-stats-row {
-    background: #F0F4F8;
-    border-radius: 12px;
-    padding: 12px 16px;
-    margin-top: 12px;
-    border: 1px solid #E8ECF0;
-  }
-
-  .summary-stat-icon {
-    background: #2D6B55;
-    color: #FFF;
-  }
-
-  .summary-stat-value {
-    color: #1A1A2E;
-    font-size: 14px;
-  }
-
-  .summary-stat-label {
-    color: #7F8C8D;
-    font-size: 10px;
-  }
-}
-
-@media (max-width: 480px) {
-  .summary-stats-row {
-    padding: 8px 10px;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-
-  .summary-stat-item {
-    flex: 1 1 30%;
-    min-width: 80px;
-  }
-
-  .summary-stat-icon {
-    width: 22px;
-    height: 22px;
-    font-size: 10px;
-  }
-
-  .summary-stat-value {
-    font-size: 11px;
-  }
-
-  .summary-stat-label {
-    font-size: 8px;
-  }
-}
+/* ============================================================
+   DASHBOARD SHELL
+   ============================================================ */
 .dashboard {
   background: #F5F7F6;
   min-height: 100vh;
-  padding-bottom: 20px;
+  padding-bottom: 40px;
   margin-top: -4px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Header */
+/* ============================================================
+   HEADER
+   ============================================================ */
 .header {
   background: #1B4D3D;
-  padding: 20px 20px 24px;
-  border-radius: 0 0 30px 30px;
+  padding: 24px 20px 32px;
+  border-radius: 0 0 28px 28px;
 }
 
 .header-top {
@@ -128,26 +29,24 @@
 
 .greeting {
   font-size: 13px;
-  color: rgba(255,255,255,0.85);
-  margin-bottom: 2px;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 4px;
+  letter-spacing: 0.2px;
 }
 
 .user-name {
   font-size: 22px;
   font-weight: 700;
   color: #FFF;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  letter-spacing: -0.2px;
 }
 
 .shop-info {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: rgba(255,255,255,0.85);
-  font-size: 13px;
-}
-
-.shop-icon {
+  color: rgba(255, 255, 255, 0.75);
   font-size: 13px;
 }
 
@@ -177,18 +76,544 @@
   border: 2px solid #1B4D3D;
 }
 
-/* Stats */
-.stats-row {
+/* ============================================================
+   HERO CARD — Inventory Value (top of dashboard, most prominent)
+   ============================================================ */
+.hero-card {
+  background: linear-gradient(135deg, #2D6B55 0%, #1B4D3D 100%);
+  border-radius: 18px;
+  padding: 22px 24px;
+  color: #FFF;
+  margin: 0 20px;
+  margin-top: -20px;
+  box-shadow: 0 8px 24px rgba(27, 77, 61, 0.25);
+  position: relative;
+  z-index: 1;
+}
+
+.hero-card-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+}
+
+.hero-card-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #FFF;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  word-break: break-word;
+}
+
+.hero-card-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 6px;
+}
+
+/* ============================================================
+   SECTION WRAPPER
+   ============================================================ */
+.section {
+  padding: 24px 20px 0;
+}
+
+.section-header {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.section-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1B4D3D;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.see-all {
+  background: none;
+  border: none;
+  color: #2D6B55;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.see-all:hover {
+  color: #1B4D3D;
+}
+
+/* ============================================================
+   GROUP LABEL — small caption above a metrics row
+   ============================================================ */
+.summary-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7F8C8D;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+
+/* ============================================================
+   METRIC ROW — generic flex row wrapper
+   ============================================================ */
+.summary-stats-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.summary-stats-row--three .summary-stat-item {
+  flex: 1;
+}
+
+/* ============================================================
+   METRIC CARD — used in POS/Off-POS/Total rows
+   ============================================================ */
+.summary-stat-item {
+  background: #FFFFFF;
+  border: 1px solid #E8ECF0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.summary-stat-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #F0F4F8;
+  color: #2D6B55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.summary-stat-content {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summary-stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1A1A2E;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.2px;
+}
+
+.summary-stat-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: #7F8C8D;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* Total card — visually distinct, ties the row together */
+.summary-stat-item--total {
+  background: #EAF3EF;
+  border-color: #C8DED3;
+}
+
+.summary-stat-item--total .summary-stat-icon {
+  background: #2D6B55;
+  color: #FFF;
+}
+
+.summary-stat-item--total .summary-stat-value {
+  color: #1B4D3D;
+  font-weight: 800;
+}
+
+.summary-stat-item--total .summary-stat-label {
+  color: #2D6B55;
+  font-weight: 600;
+}
+
+/* ============================================================
+   QUICK ACTIONS
+   ============================================================ */
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
 
+.action-card {
+  background: #FFFFFF;
+  border: 1px solid #E8ECF0;
+  border-radius: 14px;
+  padding: 14px 8px 12px;
+  text-align: center;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+}
+
+.action-card:hover {
+  transform: translateY(-2px);
+  border-color: #C8DED3;
+  box-shadow: 0 4px 12px rgba(27, 77, 61, 0.08);
+}
+
+.action-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #EAF3EF;
+  color: #2D6B55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+}
+
+.action-card span {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1B4D3D;
+  line-height: 1.2;
+}
+
+/* ============================================================
+   ACTIVITY LIST
+   ============================================================ */
+.activity-item {
+  background: #FFFFFF;
+  border: 1px solid #E8ECF0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  cursor: default;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.activity-item[style*="cursor: pointer"]:hover {
+  background: #F8FBFA;
+  border-color: #C8DED3;
+}
+
+.activity-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2D6B55;
+  flex-shrink: 0;
+}
+
+.activity-dot.alert {
+  background: #C0392B;
+}
+
+.activity-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1A2E;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-time {
+  font-size: 11px;
+  color: #95A5A6;
+  margin-top: 2px;
+}
+
+.activity-amount {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.activity-amount.positive { color: #2D6B55; }
+.activity-amount.negative { color: #C0392B; }
+
+/* ============================================================
+   ERROR STATE
+   ============================================================ */
+.error-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.error-state p {
+  color: #C0392B;
+  font-size: 15px;
+  margin: 12px 0 20px;
+}
+
+.error-retry-btn {
+  padding: 10px 24px;
+  background: #1B4D3D;
+  color: #FFF;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.error-retry-btn:hover {
+  background: #2D6B55;
+}
+
+/* ============================================================
+   SKELETON LOADERS
+   ============================================================ */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #E8ECF0 25%,
+    #F3F6F8 50%,
+    #E8ECF0 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.skeleton-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  flex-shrink: 0;
+}
+
+.skeleton-text {
+  height: 12px;
+  border-radius: 4px;
+}
+
+.skeleton-text.sm { height: 9px; }
+.skeleton-text.lg { height: 16px; }
+
+.skeleton-w-40  { width: 40%; }
+.skeleton-w-60  { width: 60%; }
+.skeleton-w-70  { width: 70%; }
+.skeleton-w-80  { width: 80%; }
+.skeleton-w-100 { width: 100%; }
+
+/* Loading state wrappers */
+.summary-stat-item.is-loading .summary-stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.activity-item.is-loading {
+  pointer-events: none;
+}
+
+.activity-skeleton-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.action-card.is-loading {
+  pointer-events: none;
+}
+
+.action-card.is-loading .action-icon.skeleton-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  margin: 0 auto 8px;
+}
+
+/* Hero card skeleton variant (light on dark) */
+.hero-card .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.12) 25%,
+    rgba(255,255,255,0.24) 50%,
+    rgba(255,255,255,0.12) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* ============================================================
+   DESKTOP OVERRIDES
+   ============================================================ */
+@media (min-width: 769px) {
+  .header {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .header-top {
+    display: none;
+  }
+
+  .hero-card {
+    margin: 0 0 20px 0;
+    border-radius: 16px;
+  }
+
+  .section {
+    padding: 20px 0 0;
+  }
+
+  .summary-stat-item {
+    padding: 16px 18px;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .summary-stat-item .summary-stat-content {
+    gap: 4px;
+  }
+
+  .summary-stat-value {
+    font-size: 16px;
+  }
+
+  .summary-stat-label {
+    font-size: 11px;
+  }
+
+  .summary-stat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .hero-card-value {
+    font-size: 34px;
+  }
+}
+
+/* ============================================================
+   MOBILE OVERRIDES (small phones)
+   ============================================================ */
+@media (max-width: 480px) {
+  .section {
+    padding: 18px 16px 0;
+  }
+
+  .hero-card {
+    margin: 0 16px;
+    padding: 18px 20px;
+  }
+
+  .hero-card-value {
+    font-size: 24px;
+  }
+
+  /* Stack the three metric cards vertically on very small screens */
+  .summary-stats-row--three {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .summary-stats-row--three .summary-stat-item {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+
+  .summary-stats-row--three .summary-stat-item .summary-stat-content {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .summary-stats-row--three .summary-stat-value {
+    font-size: 15px;
+  }
+
+  .summary-stats-row--three .summary-stat-label {
+    order: -1;
+    font-size: 11px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .actions-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .action-card {
+    padding: 10px 4px 8px;
+  }
+
+  .action-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .action-card span {
+    font-size: 10px;
+  }
+}
+
+/* ============================================================
+   LEGACY COMPAT (kept for other pages that reuse .stat-card etc.)
+   ============================================================ */
+.stats-row { display: flex; gap: 10px; }
+
 .stat-card {
   flex: 1;
-  background: rgba(255,255,255,0.95);
+  background: #FFFFFF;
   border-radius: 12px;
   padding: 12px;
-  min-width: 0; /* Allows flex items to shrink */
+  min-width: 0;
+  border: 1px solid #E8ECF0;
 }
 
 .stat-header {
@@ -202,7 +627,7 @@
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: rgba(45,107,85,0.15);
+  background: #F0F4F8;
   color: #2D6B55;
   display: flex;
   align-items: center;
@@ -211,23 +636,8 @@
   flex-shrink: 0;
 }
 
-.stat-change {
-  font-size: 10px;
-  font-weight: 600;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.stat-change.positive {
-  color: #2D6B55;
-}
-
-.stat-change.negative {
-  color: #C0392B;
-}
-
 .stat-value {
-  font-size: 16px; /* Reduced from 18px */
+  font-size: 16px;
   font-weight: 700;
   color: #1B4D3D;
   white-space: nowrap;
@@ -240,265 +650,21 @@
   color: #7F8C8D;
 }
 
-/* Section */
-.section {
-  padding: 20px 20px 0;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-}
-
-.section-header h3 {
-  font-size: 17px;
-  font-weight: 700;
-  color: #1B4D3D;
-  margin: 0;
-}
-
-.see-all {
-  background: none;
-  border: none;
-  color: #2D6B55;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-/* Quick Actions */
-.actions-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-
-.action-card {
-  background: #FFF;
-  border-radius: 14px;
-  padding: 14px 8px;
-  text-align: center;
-  box-shadow: 0 2px 6px rgba(27,77,61,0.06);
-  transition: transform 0.2s;
-  cursor: pointer;
-}
-
-.action-card:hover {
-  transform: scale(1.03);
-}
-
-.action-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #2D6B55;
-  color: #FFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  margin: 0 auto 8px;
-}
-
-.action-card span {
-  font-size: 11px;
-  font-weight: 500;
-  color: #1B4D3D;
-}
-
-/* Activity */
-.activity-item {
-  background: #FFF;
-  border-radius: 12px;
-  padding: 14px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  box-shadow: 0 1px 4px rgba(27,77,61,0.04);
-}
-
-.activity-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.activity-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #2D6B55;
-}
-
-.activity-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: #1B4D3D;
-}
-
-.activity-time {
-  font-size: 11px;
-  color: #95A5A6;
-}
-
-.activity-amount {
-  font-size: 14px;
+.stat-change {
+  font-size: 10px;
   font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.activity-amount.positive {
-  color: #2D6B55;
+.stat-change.positive { color: #2D6B55; }
+.stat-change.negative { color: #C0392B; }
+
+.spin {
+  animation: spin 1s linear infinite;
 }
 
-.activity-amount.negative {
-  color: #C0392B;
-}
-
-.activity-dot.alert {
-  background: #C0392B;
-}
-
-/* Desktop only - Hide green region, show white */
-@media (min-width: 769px) {
-  .header {
-    background: transparent;
-    padding: 0;
-    border-radius: 0;
-  }
-
-  .header-top {
-    display: none;
-  }
-
-  .stats-row {
-    padding: 0;
-  }
-
-  .stat-card {
-    background: #FFFFFF;
-    border: 1px solid #E8ECF0;
-  }
-
-  .stat-value {
-    color: #1A1A2E;
-    font-size: 16px; /* Match mobile */
-  }
-
-  .stat-label {
-    color: #7F8C8D;
-  }
-
-  .stat-change {
-    color: #1A1A2E;
-  }
-
-  .stat-change.positive {
-    color: #2D6B55;
-  }
-
-  .stat-change.negative {
-    color: #C0392B;
-  }
-
-  .stat-icon {
-    background: #F0F4F8;
-    color: #2D6B55;
-  }
-}
-
-/* Mobile font adjustments for stats */
-@media (max-width: 480px) {
-  .stat-value {
-    font-size: 13px; /* Smaller on mobile */
-  }
-
-  .stat-card {
-    padding: 10px 8px;
-  }
-
-  .stat-change {
-    font-size: 8px;
-  }
-
-  .stat-label {
-    font-size: 8px;
-  }
-
-  .stat-icon {
-    width: 22px;
-    height: 22px;
-    font-size: 10px;
-  }
-
-  .stats-row {
-    gap: 6px;
-  }
-}
-/* Dashboard.css - Add these styles */
-
-/* Extra Metrics Row */
-.extra-metrics-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.extra-metric-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 20px;
-  background: #F8FAFC;
-  border-radius: 10px;
-  border: 1px solid #E2E8F0;
-}
-
-.extra-metric-item.warning {
-  border-color: #F59E0B;
-  background: #FFFBEB;
-}
-
-.extra-metric-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #E2E8F0;
-  border-radius: 8px;
-  color: #1B4D3D;
-}
-
-.extra-metric-item.warning .extra-metric-icon {
-  background: #FEF3C7;
-  color: #D97706;
-}
-
-.extra-metric-content {
-  flex: 1;
-}
-
-.extra-metric-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: #0F172A;
-}
-
-.extra-metric-label {
-  font-size: 13px;
-  color: #64748B;
-}
-
-/* Activity item clickable */
-.activity-item {
-  cursor: default;
-  transition: background 0.2s;
-}
-
-.activity-item[style*="cursor: pointer"]:hover {
-  background: #F1F5F9;
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
