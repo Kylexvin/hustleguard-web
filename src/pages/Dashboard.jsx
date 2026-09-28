@@ -7,7 +7,6 @@ import {
   Package,
   Clock,
   ChartBar,
-
   Coins,
   TrendingUp,
   AlertTriangle
@@ -22,7 +21,10 @@ export default function Dashboard() {
     inventoryValue: 0,
     weekly: {
       pos:    { sales: 0, profit: 0 },
-      offPos: { sales: 0, profit: 0 },
+      offPos: {
+        current:    { sales: 0, profit: 0, units: 0, period: null },
+        cumulative: { sales: 0, profit: 0, units: 0, periods: 0 }
+      },
       total:  { sales: 0, profit: 0 }
     }
   });
@@ -65,8 +67,18 @@ export default function Dashboard() {
             profit: toNum(weekly.pos?.profit)
           },
           offPos: {
-            sales:  toNum(weekly.offPos?.sales),
-            profit: toNum(weekly.offPos?.profit)
+            current: {
+              sales:  toNum(weekly.offPos?.current?.sales),
+              profit: toNum(weekly.offPos?.current?.profit),
+              units:  toNum(weekly.offPos?.current?.units),
+              period: weekly.offPos?.current?.period || null
+            },
+            cumulative: {
+              sales:   toNum(weekly.offPos?.cumulative?.sales),
+              profit:  toNum(weekly.offPos?.cumulative?.profit),
+              units:   toNum(weekly.offPos?.cumulative?.units),
+              periods: toNum(weekly.offPos?.cumulative?.periods)
+            }
           },
           total: {
             sales:  toNum(weekly.total?.sales),
@@ -150,6 +162,14 @@ export default function Dashboard() {
 
   const formatKES = (n) => `KES ${Number(n || 0).toLocaleString()}`;
 
+  const formatShortDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('en-KE', {
+      day: '2-digit',
+      month: 'short'
+    });
+  };
+
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
@@ -198,6 +218,22 @@ export default function Dashboard() {
                   <div className="skeleton skeleton-text lg skeleton-w-70" />
                   <div className="skeleton skeleton-text sm skeleton-w-40" />
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Off-POS breakdown skeleton */}
+        <div className="section" style={{ paddingTop: 12 }}>
+          <div className="skeleton skeleton-text sm skeleton-w-40" style={{ marginBottom: 10 }} />
+          <div className="offpos-grid">
+            {[1, 2].map((_, i) => (
+              <div className="offpos-card is-loading" key={i}>
+                <div className="skeleton skeleton-text sm skeleton-w-40" />
+                <div className="skeleton skeleton-text sm skeleton-w-60" />
+                <div className="skeleton skeleton-text skeleton-w-70" style={{ marginTop: 8 }} />
+                <div className="skeleton skeleton-text skeleton-w-70" />
+                <div className="skeleton skeleton-text skeleton-w-70" />
               </div>
             ))}
           </div>
@@ -269,6 +305,9 @@ export default function Dashboard() {
   // ============================================================
   // MAIN DASHBOARD
   // ============================================================
+  const offPosCurrent    = statsData.weekly.offPos.current;
+  const offPosCumulative = statsData.weekly.offPos.cumulative;
+
   return (
     <div className="dashboard">
 
@@ -295,7 +334,7 @@ export default function Dashboard() {
           <div className="summary-stat-item">
             <div className="summary-stat-icon"><ShoppingBag size={16} /></div>
             <div className="summary-stat-content">
-              <div className="summary-stat-value">{formatKES(statsData.weekly.offPos.sales)}</div>
+              <div className="summary-stat-value">{formatKES(offPosCurrent.sales)}</div>
               <div className="summary-stat-label">Off-POS Sales</div>
             </div>
           </div>
@@ -323,7 +362,7 @@ export default function Dashboard() {
           <div className="summary-stat-item">
             <div className="summary-stat-icon"><Coins size={16} /></div>
             <div className="summary-stat-content">
-              <div className="summary-stat-value">{formatKES(statsData.weekly.offPos.profit)}</div>
+              <div className="summary-stat-value">{formatKES(offPosCurrent.profit)}</div>
               <div className="summary-stat-label">Off-POS Profit</div>
             </div>
           </div>
@@ -334,6 +373,62 @@ export default function Dashboard() {
               <div className="summary-stat-label">Total Profit</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* === Off-POS Breakdown === */}
+      <div className="section" style={{ paddingTop: 12 }}>
+        <div className="summary-group-label">Off-POS Breakdown</div>
+        <div className="offpos-grid">
+
+          {/* Current period */}
+          <div className="offpos-card">
+            <div className="offpos-card-title">This Period</div>
+            <div className="offpos-card-period">
+              {offPosCurrent.period
+                ? `${formatShortDate(offPosCurrent.period.start)} → ${formatShortDate(offPosCurrent.period.end)}`
+                : 'No confirmed count yet'}
+            </div>
+            <div className="offpos-card-row">
+              <span className="offpos-card-label">Revenue</span>
+              <span className="offpos-card-value">{formatKES(offPosCurrent.sales)}</span>
+            </div>
+            <div className="offpos-card-row">
+              <span className="offpos-card-label">Profit</span>
+              <span className="offpos-card-value offpos-card-value--profit">
+                {formatKES(offPosCurrent.profit)}
+              </span>
+            </div>
+            <div className="offpos-card-row">
+              <span className="offpos-card-label">Units</span>
+              <span className="offpos-card-value">{offPosCurrent.units}</span>
+            </div>
+          </div>
+
+          {/* Cumulative */}
+          <div className="offpos-card offpos-card--cumulative">
+            <div className="offpos-card-title">Cumulative</div>
+            <div className="offpos-card-period">
+              {offPosCumulative.periods > 0
+                ? `${offPosCumulative.periods} confirmed count${offPosCumulative.periods > 1 ? 's' : ''}`
+                : 'No confirmed counts yet'}
+            </div>
+            <div className="offpos-card-row">
+              <span className="offpos-card-label">Revenue</span>
+              <span className="offpos-card-value">{formatKES(offPosCumulative.sales)}</span>
+            </div>
+            <div className="offpos-card-row">
+              <span className="offpos-card-label">Profit</span>
+              <span className="offpos-card-value offpos-card-value--profit">
+                {formatKES(offPosCumulative.profit)}
+              </span>
+            </div>
+            <div className="offpos-card-row">
+              <span className="offpos-card-label">Units</span>
+              <span className="offpos-card-value">{offPosCumulative.units}</span>
+            </div>
+          </div>
+
         </div>
       </div>
 
