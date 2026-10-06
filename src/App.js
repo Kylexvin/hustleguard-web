@@ -33,8 +33,8 @@ import StockCount from './pages/StockCount.jsx';
 import axios from 'axios';
 
 // Axios config
-// axios.defaults.baseURL = 'http://localhost:5000/api'; 
-axios.defaults.baseURL = 'https://hustleguard.onrender.com/api';
+axios.defaults.baseURL = 'http://localhost:5000/api'; 
+// axios.defaults.baseURL = 'https://hustleguard.onrender.com/api';
 
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 axios.defaults.withCredentials = true;
