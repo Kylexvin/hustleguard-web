@@ -6,7 +6,7 @@ import {
   Settings, LogOut, ChevronDown, BarChart3, 
   Plus, List as ListIcon, 
   FolderOpen, CreditCard, AlertCircle, 
-  Eye  
+  Eye, PackagePlus
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import styles from './css/Sidebar.module.css';
@@ -29,10 +29,11 @@ const Sidebar = ({ isMobile, onClose }) => {
 
   const isProductsActive = location.pathname.startsWith('/products') || 
                           location.pathname === '/categories' ||
-                          location.pathname === '/stock-monitor';  // ✅ ADD THIS
+                          location.pathname === '/stock-monitor';
 
-  const isReportsActive = location.pathname.startsWith('/reports') ||
-                          location.pathname === '/expenses';
+  // Reports group is only "active" on report routes — Expenses has its own
+  // top-level entry, so it must NOT trigger the Reports highlight.
+  const isReportsActive = location.pathname.startsWith('/reports');
 
   return (
     <aside className={`${styles.sidebar} ${isMobile ? styles.mobile : ''}`}>
@@ -92,6 +93,12 @@ const Sidebar = ({ isMobile, onClose }) => {
         <NavLink to="/expenses" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`} onClick={handleNavClick}>
           <CreditCard size={16} className={styles.navIcon} /> 
           <span className={styles.navLabel}>Expenses</span>
+        </NavLink>
+
+        {/* Purchases — Week 6 Part 1 */}
+        <NavLink to="/purchases" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`} onClick={handleNavClick}>
+          <PackagePlus size={16} className={styles.navIcon} /> 
+          <span className={styles.navLabel}>Purchases</span>
         </NavLink>
 
         {/* Reports - Simplified */}

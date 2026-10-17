@@ -29,12 +29,14 @@ import Expenses from './pages/expenses/Expenses';
 import AddExpense from './pages/expenses/AddExpense';
 import StockMonitor from './pages/StockMonitor.jsx';
 import StockCount from './pages/StockCount.jsx';
+import Purchases from './pages/purchases/Purchases';          
+import AddPurchase from './pages/purchases/AddPurchase';      
 
 import axios from 'axios';
 
 // Axios config
-// axios.defaults.baseURL = 'http://localhost:5000/api'; 
-axios.defaults.baseURL = 'https://hustleguard.onrender.com/api';
+axios.defaults.baseURL = 'http://localhost:5000/api'; 
+// axios.defaults.baseURL = 'https://hustleguard.onrender.com/api';
 
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 axios.defaults.withCredentials = true;
@@ -100,6 +102,11 @@ function AppRoutes() {
         <Route path="/products/:id/stock" element={<ProductStock />} />
         <Route path="/stock-count" element={<StockCount />} />
         <Route path="/stock-monitor" element={<StockMonitor />} />
+
+        {/* Purchases (Week 6 Part 1) */}
+        <Route path="/purchases" element={<Purchases />} />                      {/* ← NEW */}
+        <Route path="/purchases/add" element={<AddPurchase />} />                {/* ← NEW */}
+        <Route path="/purchases/edit/:id" element={<AddPurchase />} />           {/* ← NEW */}
         
         {/* Report Routes */}
         <Route path="reports" element={<Reports />} />

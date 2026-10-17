@@ -1,0 +1,510 @@
+/* src/pages/purchases/css/AddPurchase.css */
+
+/* Reuse the same tokens StockCount.css defines globally. */
+
+/* ===== LOADING ===== */
+.add-purchase-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 60vh;
+  color: var(--pos-text-muted);
+  font-size: 14px;
+}
+
+/* .spinner is already defined in StockCount.css — re-declare here so this
+   page works standalone if imported without the stock-count stylesheet. */
+.add-purchase-loading .spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid var(--pos-green-100);
+  border-top-color: var(--pos-green-500);
+  animation: ap-spin 0.8s linear infinite;
+}
+
+@keyframes ap-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== CONTAINER ===== */
+.add-purchase {
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 22px 32px;
+  background: var(--pos-bg);
+  box-sizing: border-box;
+  color: var(--pos-text);
+  font-variant-numeric: tabular-nums;
+  position: relative;
+}
+
+/* ===== HEADER ===== */
+.add-purchase-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.add-purchase-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.add-purchase-header .icon-back-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  border: none;
+  background: var(--pos-panel);
+  color: var(--pos-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--nm-raised);
+  transition: box-shadow 0.15s, color 0.15s;
+}
+
+.add-purchase-header .icon-back-btn:hover {
+  color: var(--pos-green-600);
+  box-shadow: var(--nm-raised-hover);
+}
+
+.add-purchase-header .icon-back-btn:active {
+  box-shadow: var(--nm-inset);
+}
+
+.add-purchase-header h2 {
+  margin: 0 0 2px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.add-purchase-header .subtitle {
+  font-size: 12.5px;
+  color: var(--pos-text-muted);
+}
+
+/* ===== ERROR BANNER ===== */
+.ap-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--pos-danger-soft);
+  color: var(--pos-danger);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.ap-error svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ===== FORM CARD ===== */
+.ap-card {
+  background: var(--pos-panel);
+  border-radius: var(--pos-radius);
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(13, 40, 24, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ap-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ap-field label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--pos-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ap-field input,
+.ap-field select,
+.ap-field textarea {
+  padding: 11px 12px;
+  border: none;
+  border-radius: 11px;
+  background: var(--pos-sunken);
+  font-size: 14px;
+  color: var(--pos-text);
+  box-shadow: var(--nm-inset);
+  outline: none;
+  font-family: inherit;
+  transition: box-shadow 0.15s, background 0.15s;
+}
+
+.ap-field textarea {
+  resize: vertical;
+  min-height: 64px;
+  line-height: 1.4;
+}
+
+.ap-field input:focus,
+.ap-field select:focus,
+.ap-field textarea:focus {
+  box-shadow: var(--nm-inset), 0 0 0 3px var(--pos-green-100);
+  background: #fff;
+}
+
+.ap-field input:disabled,
+.ap-field select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Remove native number spinners for cleaner look */
+.ap-field input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.ap-field input[type='number']::-webkit-outer-spin-button,
+.ap-field input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ===== GRID ===== */
+.ap-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* ===== PRODUCT PICKER TRIGGER ===== */
+.ap-product-placeholder,
+.ap-product-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 11px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  width: 100%;
+  transition: box-shadow 0.15s, background 0.15s;
+}
+
+.ap-product-placeholder {
+  background: var(--pos-sunken);
+  color: var(--pos-text-muted);
+  box-shadow: var(--nm-inset);
+}
+
+.ap-product-placeholder:hover {
+  color: var(--pos-green-600);
+  box-shadow: var(--nm-inset), 0 0 0 3px var(--pos-green-50);
+}
+
+.ap-product-chip {
+  background: var(--pos-green-50);
+  color: var(--pos-text);
+  box-shadow: var(--nm-raised);
+}
+
+.ap-product-chip:hover {
+  box-shadow: var(--nm-raised-hover);
+}
+
+.ap-product-chip .chip-name {
+  font-weight: 700;
+  flex: 1;
+}
+
+.ap-product-chip .chip-meta {
+  font-size: 11.5px;
+  color: var(--pos-text-muted);
+  font-weight: 600;
+}
+
+.ap-product-chip .chip-clear {
+  color: var(--pos-text-muted);
+  flex-shrink: 0;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.ap-product-chip .chip-clear:hover {
+  color: var(--pos-danger);
+  background: rgba(224, 72, 63, 0.08);
+}
+
+/* ===== TOTALS STRIP ===== */
+.ap-totals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ap-total-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--pos-radius);
+  background: var(--pos-panel);
+  box-shadow: 0 2px 12px rgba(13, 40, 24, 0.06);
+}
+
+.ap-total-block span {
+  font-size: 11px;
+  color: var(--pos-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+
+.ap-total-block strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--pos-text);
+}
+
+.ap-total-block.highlight {
+  background: var(--pos-green-50);
+}
+
+.ap-total-block.highlight strong {
+  color: var(--pos-green-700);
+}
+
+/* ===== ACTIONS ===== */
+.ap-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+/* Reuse primary/outline styling from StockCount.css tokens,
+   redeclared here so this page renders correctly standalone. */
+.add-purchase .primary-btn,
+.add-purchase .outline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: box-shadow 0.15s, background 0.15s;
+}
+
+.add-purchase .primary-btn {
+  background: var(--pos-green-600);
+  color: #fff;
+  box-shadow: var(--nm-raised-accent);
+}
+
+.add-purchase .primary-btn:hover:not(:disabled) {
+  background: var(--pos-green-700);
+}
+
+.add-purchase .primary-btn:active:not(:disabled) {
+  box-shadow: var(--nm-inset);
+}
+
+.add-purchase .primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.add-purchase .outline-btn {
+  background: var(--pos-panel);
+  color: var(--pos-text);
+  box-shadow: var(--nm-raised);
+}
+
+.add-purchase .outline-btn:hover {
+  color: var(--pos-green-600);
+  box-shadow: var(--nm-raised-hover);
+}
+
+.add-purchase .outline-btn:active {
+  box-shadow: var(--nm-inset);
+}
+
+/* ===== PICKER MODAL ===== */
+.add-purchase .modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 40, 24, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+
+.add-purchase .modal-content {
+  background: var(--pos-panel);
+  border-radius: var(--pos-radius);
+  width: 100%;
+  max-width: 480px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(13, 40, 24, 0.25);
+}
+
+.add-purchase .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--pos-border);
+}
+
+.add-purchase .modal-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.add-purchase .modal-header .close-btn {
+  background: none;
+  border: none;
+  color: var(--pos-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.add-purchase .modal-header .close-btn:hover {
+  color: var(--pos-danger);
+  background: rgba(224, 72, 63, 0.08);
+}
+
+.add-purchase .modal-body {
+  padding: 14px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Picker search */
+.ap-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: var(--pos-sunken);
+  box-shadow: var(--nm-inset);
+  color: var(--pos-text-muted);
+}
+
+.ap-picker-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: var(--pos-text);
+  font-family: inherit;
+}
+
+/* Picker list */
+.ap-picker-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+  min-height: 0;
+}
+
+.ap-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 11px;
+  background: var(--pos-panel);
+  border: 1px solid var(--pos-border);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.ap-picker-row:hover {
+  background: var(--pos-sunken);
+  box-shadow: var(--nm-raised-hover);
+}
+
+.ap-picker-row .picker-name {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--pos-text);
+}
+
+.ap-picker-row .picker-meta {
+  display: block;
+  font-size: 11.5px;
+  color: var(--pos-text-muted);
+  margin-top: 2px;
+}
+
+.ap-picker-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 12px;
+  color: var(--pos-text-muted);
+  font-size: 13px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .add-purchase { padding: 16px; }
+}
+
+@media (max-width: 768px) {
+  .add-purchase { padding: 12px; gap: 10px; }
+  .add-purchase-header h2 { font-size: 17px; }
+  .ap-card { padding: 16px; }
+  .ap-grid { grid-template-columns: 1fr; }
+  .ap-totals { grid-template-columns: 1fr; }
+  .ap-actions { flex-direction: column-reverse; }
+  .ap-actions button { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 480px) {
+  .add-purchase { padding: 8px; }
+  .ap-card { padding: 14px; }
+  .ap-total-block strong { font-size: 16px; }
+}

@@ -14,7 +14,8 @@ import {
   faExclamationTriangle,
   faShoppingCart,
   faTags,
-  faLayerGroup
+
+  faTruckLoading
 } from '@fortawesome/free-solid-svg-icons';
 import './css/Products.css';
 
@@ -28,12 +29,6 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(null);
-
-  // Stock Modal State
-  const [showStockModal, setShowStockModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [stockQuantity, setStockQuantity] = useState(0);
-  const [addingStock, setAddingStock] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -81,34 +76,11 @@ export default function Products() {
     }
   };
 
-  const handleAddStock = async () => {
-    if (stockQuantity <= 0) {
-      alert('Enter a valid quantity');
-      return;
-    }
-
-    try {
-      setAddingStock(true);
-      await axios.post(`/products/${selectedProduct._id}/stock`, {
-        quantity: stockQuantity
-      });
-      
-      setShowStockModal(false);
-      setStockQuantity(0);
-      setSelectedProduct(null);
-      fetchProducts();
-      alert('Stock added successfully!');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add stock');
-    } finally {
-      setAddingStock(false);
-    }
-  };
-
-  const openStockModal = (product) => {
-    setSelectedProduct(product);
-    setStockQuantity(0);
-    setShowStockModal(true);
+  // Receive Stock → route to the purchases form with this product pre-selected.
+  // All stock changes flow through the append-only StockMovement ledger so
+  // Off-POS counts, purchase history and financials stay in sync.
+  const handleReceiveStock = (product) => {
+    navigate(`/purchases/add?productId=${product._id}`);
   };
 
   // ============================================================
@@ -365,10 +337,10 @@ export default function Products() {
                     </button>
                     <button 
                       className="stock-btn"
-                      onClick={() => openStockModal(product)}
-                      title="Add Stock"
+                      onClick={() => handleReceiveStock(product)}
+                      title="Receive Stock"
                     >
-                      <FontAwesomeIcon icon={faLayerGroup} /> Add Stock
+                      <FontAwesomeIcon icon={faTruckLoading} /> Receive Stock
                     </button>
                   </div>
                 </div>
@@ -382,65 +354,6 @@ export default function Products() {
       <button className="products-fab" onClick={() => navigate('/products/add')}>
         <FontAwesomeIcon icon={faPlus} />
       </button>
-
-      {/* Stock Modal */}
-      {showStockModal && selectedProduct && (
-        <div className="stock-modal-overlay" onClick={() => setShowStockModal(false)}>
-          <div className="stock-modal" onClick={e => e.stopPropagation()}>
-            <div className="stock-modal-header">
-              <h3>Add Stock - {selectedProduct.name}</h3>
-              <button className="stock-modal-close" onClick={() => setShowStockModal(false)}>
-                <FontAwesomeIcon icon={faTimes} />
-              </button>
-            </div>
-            <div className="stock-modal-body">
-              <div className="stock-info-row">
-                <span className="stock-info-label">Current Stock</span>
-                <span className="stock-info-value">
-                  {getStock(selectedProduct)} {getBaseUnitLabel(selectedProduct)}
-                </span>
-              </div>
-              <div className="stock-info-row">
-                <span className="stock-info-label">Base Unit</span>
-                <span className="stock-info-value">{getBaseUnitLabel(selectedProduct)}</span>
-              </div>
-              <div className="form-group">
-                <label>Add Quantity</label>
-                <input
-                  type="number"
-                  placeholder={getStock(selectedProduct)}
-                  value={stockQuantity}
-                  onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)}
-                  min="0"
-                  autoFocus
-                />
-              </div>
-              <div className="stock-info-row new-stock-row">
-                <span className="stock-info-label">New Stock</span>
-                <span className="stock-info-value highlight">
-                  {getStock(selectedProduct) + stockQuantity} {getBaseUnitLabel(selectedProduct)}
-                </span>
-              </div>
-            </div>
-            <div className="stock-modal-footer">
-              <button className="cancel-btn" onClick={() => setShowStockModal(false)}>
-                Cancel
-              </button>
-              <button 
-                className="confirm-btn" 
-                onClick={handleAddStock}
-                disabled={addingStock || stockQuantity <= 0}
-              >
-                {addingStock ? (
-                  <><FontAwesomeIcon icon={faSpinner} spin /> Adding...</>
-                ) : (
-                  'Add Stock'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

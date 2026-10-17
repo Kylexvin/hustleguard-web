@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Search, RefreshCw, Package, TrendingUp, TrendingDown, ClipboardList } from 'lucide-react';
+import { Search, RefreshCw, Package, TrendingUp, TrendingDown, ClipboardList, PackagePlus, Plus } from 'lucide-react';
 import './css/StockMonitor.css';
 
 export default function StockMonitor() {
@@ -69,9 +69,17 @@ export default function StockMonitor() {
         </div>
         <div className="header-actions">
           <button
-  className="count-stock-btn"
-  onClick={() => navigate('/stock-count')}
->
+            className="receive-stock-btn"
+            onClick={() => navigate('/purchases/add')}
+            title="Log incoming stock"
+          >
+            <PackagePlus size={18} />
+            Receive Stock
+          </button>
+          <button
+            className="count-stock-btn"
+            onClick={() => navigate('/stock-count')}
+          >
             <ClipboardList size={18} />
             {meta?.hasDraft ? 'Continue Count' : 'Count Stock'}
           </button>
@@ -152,12 +160,13 @@ export default function StockMonitor() {
               <th className="text-right">Sold Today</th>
               <th className="text-right">Current Stock</th>
               <th className="text-right">Status</th>
+              <th className="text-right"></th>
             </tr>
           </thead>
           <tbody>
             {filteredProducts.length === 0 ? (
               <tr>
-                <td colSpan="6" className="empty-state">
+                <td colSpan="7" className="empty-state">
                   <Package size={32} />
                   <p>No products found</p>
                 </td>
@@ -186,6 +195,16 @@ export default function StockMonitor() {
                       <span className={`status-badge ${statusClass}`}>
                         {status}
                       </span>
+                    </td>
+                    <td className="text-right">
+                      <button
+                        className="row-receive-btn"
+                        onClick={() => navigate(`/purchases/add?productId=${product._id}`)}
+                        title={`Receive stock for ${product.name}`}
+                      >
+                        <Plus size={14} />
+                        Receive
+                      </button>
                     </td>
                   </tr>
                 );

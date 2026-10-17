@@ -636,3 +636,49 @@
     display: none;
   }
 }
+/* ===== Week 6 Part 1: Receive Stock ===== */
+.receive-stock-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 11px;
+  border: none;
+  background: var(--pos-green-600, #157832);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow:
+    3px 3px 8px rgba(15, 95, 40, 0.35),
+    -2px -2px 6px rgba(74, 222, 128, 0.25);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.receive-stock-btn:hover {
+  background: var(--pos-green-700, #0f5f28);
+}
+
+.receive-stock-btn:active {
+  box-shadow: inset 2px 2px 5px rgba(15, 95, 40, 0.35);
+}
+
+.row-receive-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #dcece2;
+  background: #fff;
+  color: #157832;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.row-receive-btn:hover {
+  background: #eafcf2;
+  border-color: #b7e5c8;
+}
