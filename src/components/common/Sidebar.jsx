@@ -31,8 +31,9 @@ const Sidebar = ({ isMobile, onClose }) => {
                           location.pathname === '/categories' ||
                           location.pathname === '/stock-monitor';
 
-  const isReportsActive = location.pathname.startsWith('/reports') ||
-                          location.pathname === '/expenses';
+  // Reports group is only "active" on report routes — Expenses has its own
+  // top-level entry, so it must NOT trigger the Reports highlight.
+  const isReportsActive = location.pathname.startsWith('/reports');
 
   return (
     <aside className={`${styles.sidebar} ${isMobile ? styles.mobile : ''}`}>

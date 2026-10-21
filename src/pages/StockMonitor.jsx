@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Search, RefreshCw, Package, TrendingUp, TrendingDown, ClipboardList, Plus } from 'lucide-react';
+import { Search, RefreshCw, Package, TrendingUp, TrendingDown, ClipboardList, Plus, PackagePlus, } from 'lucide-react';
 import './css/StockMonitor.css';
-// PackagePlus,
+
 export default function StockMonitor() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -68,14 +68,14 @@ export default function StockMonitor() {
           })}</span>
         </div>
         <div className="header-actions">
-          {/* <button
+          <button
             className="receive-stock-btn"
             onClick={() => navigate('/purchases/add')}
             title="Log incoming stock"
           >
             <PackagePlus size={18} />
             Receive Stock
-          </button> */}
+          </button>
           <button
             className="count-stock-btn"
             onClick={() => navigate('/stock-count')}
